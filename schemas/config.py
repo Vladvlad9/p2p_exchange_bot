@@ -10,3 +10,4 @@ class ConfigSchema(BaseModel):
     BOT: BotSchema
     DATABASE: str
     COINBASE: str
+    COMMISSION: str

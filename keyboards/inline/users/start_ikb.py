@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
 
+from crud import CRUDUsers
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
 from states.users.MainState import MainState
@@ -16,7 +17,38 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="Назад", callback_data=main_cb.new(target, 0, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def proof_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="ПОДТВЕРДИТЬ 👍🏻", callback_data=main_cb.new("MainForm", 0, 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def user_paid_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Я ОПЛАТИЛ ✅", callback_data=main_cb.new("UserPaid", 0, 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def CheckOut_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Да 👌", callback_data=main_cb.new("Buy", 0, 0, 0)),
+                    InlineKeyboardButton(text="Нет 👎", callback_data=main_cb.new("MainForm", 0, 0, 0))
                 ]
             ]
         )
@@ -50,7 +82,7 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="Купить", callback_data=main_cb.new("Buy", 0, count, user_id))
+                    InlineKeyboardButton(text="Купить ✅", callback_data=main_cb.new("Buy", 0, count, user_id))
                 ],
                 [
                     InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
@@ -74,14 +106,18 @@ class MainForm:
 
     @staticmethod
     async def start_ikb(user_id: int) -> InlineKeyboardMarkup:
+        data = {"💳 Купить BTC": {"target": "BuyBTC", "action": "get_BuyBTC", "id": 0, "editid": user_id},
+                "💳 Продать BTC": {"target": "SellBTC", "action": "get_SellBTC", "id": 0, "editid": user_id},
+                "💻 Профиль": {"target": "Profile", "action": "get_Profile", "id": 0, "editid": user_id},
+                }
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="💳 Купить BTC", callback_data=main_cb.new("BuyBTC", 0, 0, user_id))
-                ],
-                [
-                    InlineKeyboardButton(text="💳 Продать BTC", callback_data=main_cb.new("SellBTC", 0, 0, user_id))
-                ]
+                    InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target"],
+                                                                              name_items["action"],
+                                                                              name_items["id"],
+                                                                              name_items["editid"]))
+                ] for name, name_items in data.items()
             ]
         )
 
@@ -99,11 +135,24 @@ class MainForm:
                                                          user_id=callback.from_user.id)
                                                      )
 
+                elif data.get("target") == "Profile":
+                    user = await CRUDUsers.get(user_id=callback.from_user.id)
+                    text = f"Профиль\n\n" \
+                           f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n" \
+                           f"Совершено сделок - {user.transactions}"
+                    await callback.message.edit_text(text=text,
+                                                     reply_markup=await MainForm.back_ikb(user_id=callback.from_user.id,
+                                                                                          target="MainForm")
+                                                     )
+
                 elif data.get("target") == "BuyBTC":
                     price = await Cryptocurrency.get_Cryptocurrency()
-                    await callback.message.edit_text(text="💳 Купить криптовалюту: BTC за BYN\n"
-                                                          f"1 Bitcoin = {price} BYN\n\n"
-                                                          f"<i>Мин. сумма: 50.0 BYN</i>",
+
+                    text = "💳 Купить криптовалюту: BTC за BYN\n"\
+                           f"1 Bitcoin = {price} BYN\n\n"\
+                           f"<i>Мин. сумма: 50.0 BYN</i>"
+
+                    await callback.message.edit_text(text=text,
                                                      reply_markup=await MainForm.money_ikb(
                                                          user_id=callback.from_user.id,
                                                          target="MainForm"),
@@ -114,11 +163,17 @@ class MainForm:
                     if data.get("action") == "get_pay":
                         price_BYN = int(data.get("id"))
                         price_BTC = await Cryptocurrency.get_Cryptocurrency()
-                        bye = price_BYN / price_BTC
+                        bye = round(price_BYN / price_BTC, 8)
 
-                        await callback.message.edit_text(text="💳 Купить криптовалюту: BTC за BYN\n"
-                                                              f"1 Bitcoin = {price_BTC}\n\n"
-                                                              f"{price_BYN} BYN = {bye} BTC",
+                        text = "💳 Купить криптовалюту: BTC за BYN\n"\
+                               f"1 Bitcoin = {price_BTC}\n\n" \
+                               f"📢 Внимание!\n" \
+                               f"Текущая цена покупки зафиксирована!\n" \
+                               f"Нажав кнопку Купить ✅ " \
+                               f"необходимо оплатить счет в течении ⏱60 минут!\n\n"\
+                               f"{price_BYN} BYN = {bye} BTC"
+
+                        await callback.message.edit_text(text=text,
                                                          reply_markup=await MainForm.bue_ikb(
                                                              user_id=callback.from_user.id,
                                                              count=bye,
@@ -127,13 +182,18 @@ class MainForm:
 
                 elif data.get("target") == "Buy":
                     bye = float(data.get("id"))
-                    await callback.message.edit_text(text="Введите ваш кошелек, что бы купить\n"
-                                                          f"{bye} BTC",
+                    await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n\n"
+                                                          f"Покупка - {bye} BTC",
                                                      reply_markup=await MainForm.back_ikb(
                                                          user_id=callback.from_user.id,
                                                          target="BuyBTC")
                                                      )
                     await MainState.Wallet.set()
+
+                elif data.get("target") == "UserPaid":
+                    await callback.message.edit_text(text="📸 Загрузите изображение подтверждающее оплату!\n"
+                                                          "(до 2 Мб)")
+                    await MainState.UserPhoto.set()
 
         if message:
             await message.delete()
@@ -148,7 +208,39 @@ class MainForm:
 
             if state:
                 if await state.get_state() == "MainState:Wallet":
-                    await message.answer(text=f"Вы ввели кошелек {message.text}",
-                                         reply_markup=await MainForm.back_ikb(user_id=message.from_user.id,
-                                                                              target="Buy")
-                                         )
+                    wallet = await Cryptocurrency.Check_Wallet(btc_address=message.text)
+                    if wallet:
+                        text = "🧾РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ\n" \
+                               "        🏧💳💵\n" \
+                               "- СИСТЕМА ЕРИП ПЛАТЕЖИ\n" \
+                               "1. ЕРИП\n" \
+                               "2. БАНКОВСКИЕ ФИНАНСОВЫЕ \n" \
+                               "УСЛУГИ\n" \
+                               "3. БАНК НКФО\n" \
+                               "4. МТБАНК\n" \
+                               "5. ПОПОЛНЕНИЕ ДЕБЕТОВОЙ КАРТЫ\n" \
+                               "6. Р/СЧЁТ       32271867\n" \
+                               "7. ПОСЛЕ ПЕРЕВОДА СРЕДСТВ \n" \
+                               "НАЖИМАЕМ КНОПКУ \n" \
+                               "🏧🏧🏧Я Оплатил 🏧🏧🏧\n" \
+                               "8. ПРИСЫЛАЕМ ЧЕК \n" \
+                               "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
+
+                        await message.answer(text=f"Вы ввели кошелек {message.text}\n\n"
+                                                  f"{text}",
+                                             reply_markup=await MainForm.back_ikb(user_id=message.from_user.id,
+                                                                                  target="Buy")
+                                             )
+                    else:
+                        await message.answer(text=f"Адрес кошелька <i>{message.text}<i> нету в blockchain\n\n"
+                                                  f"Желаете еще раз ввести ваш адрес Bitcoin - кошелька",
+                                             reply_markup=await MainForm.CheckOut_ikb(),
+                                             parse_mode="HTML"
+                                             )
+
+                elif await state.get_state() == "MainState:UserPhoto":
+                    if message.content_type == "photo":
+                        pass
+                    else:
+                        await message.answer(text="Загрузите картинку")
+                        await MainState.UserPhoto.set()

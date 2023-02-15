@@ -4,5 +4,6 @@
     "ADMINS": [381252111]
   },
   "DATABASE": "postgres:postgres@localhost:5432/exchange",
-  "COINBASE": "https://www.coinbase.com/graphql/query?=&operationName=ConverterQuery&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22}}&variables={%22baseSymbol%22:%22BTC%22,%22targetCurrency%22:%22BYN%22,%22country%22:%22BY%22}"
+  "COINBASE": "https://www.coinbase.com/graphql/query?=&operationName=ConverterQuery&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22}}&variables={%22baseSymbol%22:%22BTC%22,%22targetCurrency%22:%22BYN%22,%22country%22:%22BY%22}",
+  "COMMISSION": 0
 }
