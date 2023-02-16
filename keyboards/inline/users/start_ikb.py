@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
 
+from config import CONFIG
 from crud import CRUDUsers
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
@@ -128,6 +129,7 @@ class MainForm:
         if callback:
             if callback.data.startswith('main'):
                 data = main_cb.parse(callback_data=callback.data)
+
                 if data.get("target") == "MainForm":
                     await callback.message.edit_text(text="Добро пожаловать\n"
                                                           "Выберите операцию",
@@ -226,13 +228,13 @@ class MainForm:
                                "8. ПРИСЫЛАЕМ ЧЕК \n" \
                                "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
 
-                        await message.answer(text=f"Вы ввели кошелек {message.text}\n\n"
+                        await message.answer(text=f"Вы ввели кошелек <i>{message.text}</i>\n\n"
                                                   f"{text}",
-                                             reply_markup=await MainForm.back_ikb(user_id=message.from_user.id,
-                                                                                  target="Buy")
+                                             reply_markup=await MainForm.user_paid_ikb(),
+                                             parse_mode="HTML"
                                              )
                     else:
-                        await message.answer(text=f"Адрес кошелька <i>{message.text}<i> нету в blockchain\n\n"
+                        await message.answer(text=f"Адрес кошелька <i>{message.text}</i> нету в blockchain\n\n"
                                                   f"Желаете еще раз ввести ваш адрес Bitcoin - кошелька",
                                              reply_markup=await MainForm.CheckOut_ikb(),
                                              parse_mode="HTML"
@@ -240,7 +242,15 @@ class MainForm:
 
                 elif await state.get_state() == "MainState:UserPhoto":
                     if message.content_type == "photo":
-                        pass
+                        if message.photo[0].file_size > 2000:
+                            await message.answer(text="Картинка превышает 2 мб\n"
+                                                      "Попробуйте загрузить еще раз")
+                            await MainState.UserPhoto.set()
+                        else:
+                            photo = message.photo[0].file_id
+                            for admin in CONFIG.BOT.ADMINS:
+                                await bot.send_photo(chat_id=admin, photo=photo,
+                                                     caption="Пользователь оплатил!")
                     else:
                         await message.answer(text="Загрузите картинку")
                         await MainState.UserPhoto.set()
