@@ -172,7 +172,7 @@ class MainForm:
         if callback:
             if callback.data.startswith('main'):
                 data = main_cb.parse(callback_data=callback.data)
-
+                # Главное меню
                 if data.get("target") == "MainForm":
                     await callback.message.edit_text(text="Добро пожаловать\n"
                                                           "Выберите операцию",
@@ -180,16 +180,17 @@ class MainForm:
                                                          user_id=callback.from_user.id)
                                                      )
 
+                # Профиль
                 elif data.get("target") == "Profile":
                     user = await CRUDUsers.get(user_id=callback.from_user.id)
                     text = f"Профиль\n\n" \
-                           f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n" \
-                           f"Совершено сделок - {user.transactions}"
+                           f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n"
                     await callback.message.edit_text(text=text,
                                                      reply_markup=await MainForm.back_ikb(user_id=callback.from_user.id,
                                                                                           target="MainForm")
                                                      )
 
+                # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
                     price = await Cryptocurrency.get_Cryptocurrency()
 
@@ -204,6 +205,7 @@ class MainForm:
                                                      parse_mode="HTML"
                                                      )
 
+                # Меню покупки BTC
                 elif data.get("target") == "Pay":
                     if data.get("action") == "get_pay":
                         price_BYN = int(data.get("id"))
@@ -233,6 +235,7 @@ class MainForm:
                                                          )
                         await MainState.UserCoin.set()
 
+                # Меню ввода кошелька
                 elif data.get("target") == "Buy":
                     bye = float(data.get("id"))
                     await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n\n"
@@ -243,6 +246,7 @@ class MainForm:
                                                      )
                     await MainState.Wallet.set()
 
+                # Загрузка картинки с потввержением об оплате
                 elif data.get("target") == "UserPaid":
                     await callback.message.edit_text(text="📸 Загрузите изображение подтверждающее оплату!\n"
                                                           "(до 2 Мб)")
@@ -260,6 +264,7 @@ class MainForm:
                 pass
 
             if state:
+                # Ввод кошелька
                 if await state.get_state() == "MainState:Wallet":
                     wallet = await Cryptocurrency.Check_Wallet(btc_address=message.text)
                     if wallet:
@@ -291,6 +296,7 @@ class MainForm:
                                              parse_mode="HTML"
                                              )
 
+                # Загрузка фото
                 elif await state.get_state() == "MainState:UserPhoto":
                     if message.content_type == "photo":
                         if message.photo[0].file_size > 2000:
@@ -312,6 +318,7 @@ class MainForm:
                         await message.answer(text="Загрузите картинку")
                         await MainState.UserPhoto.set()
 
+                # Ввод пользователем BYN
                 elif await state.get_state() == "MainState:UserCoin":
                     money = message.text.isdigit()
                     if money:
