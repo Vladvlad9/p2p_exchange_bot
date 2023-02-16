@@ -45,6 +45,6 @@ async def process_callback(callback: types.CallbackQuery, state: FSMContext = No
     await MainForm.process_profile(callback=callback, state=state)
 
 
-@dp.message_handler(state=MainState.all_states, content_types=["text"])
+@dp.message_handler(state=MainState.all_states, content_types=["text", "photo"])
 async def process_message(message: types.Message, state: FSMContext = None):
     await MainForm.process_profile(message=message, state=state)
