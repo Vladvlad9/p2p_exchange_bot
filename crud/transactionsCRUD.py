@@ -46,11 +46,16 @@ class CRUDTransaction(object):
 
     @staticmethod
     @create_async_session
-    async def get_all(session: AsyncSession = None) -> list[TransactionInDBSchema]:
+    async def get_all(user_id: int, session: AsyncSession = None) -> list[TransactionInDBSchema]:
         try:
-            users = await session.execute(
-                select(Transaction)
-            )
+            if user_id:
+                users = await session.execute(
+                    select(Transaction).where(Transaction.user_id == user_id)
+                )
+            else:
+                users = await session.execute(
+                    select(Transaction)
+                )
             return [TransactionInDBSchema(**user[0].__dict__) for user in users]
         except ValidationError as e:
             print(e)
