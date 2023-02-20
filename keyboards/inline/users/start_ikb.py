@@ -4,9 +4,10 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
-from crud import CRUDUsers
+from crud import CRUDUsers, CRUDTransaction
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
+from schemas import TransactionSchema
 from states.users.MainState import MainState
 
 main_cb = CallbackData("main", "target", "action", "id", "editId")
@@ -14,9 +15,10 @@ main_cb = CallbackData("main", "target", "action", "id", "editId")
 
 class MainForm:
     @staticmethod
-    async def back_ikb(user_id: int, target: str) -> InlineKeyboardMarkup:
+    async def back_ikb(user_id: int, target: str, action: str = None) -> InlineKeyboardMarkup:
         """
         Общая клавиатура для перехода на один шаг назад
+        :param action: Не обязательный параметр, он необходим если в callback_data есть подзапрос для вкладки
         :param user_id: id пользователя
         :param target: Параметр что бы указать куда переходить назад
         :return:
@@ -24,7 +26,7 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action, 0, user_id))
                 ]
             ]
         )
@@ -166,6 +168,86 @@ class MainForm:
         )
 
     @staticmethod
+    async def profile_ikb(user_id: int, target: str) -> InlineKeyboardMarkup:
+        """
+        Клавиатура профиля
+        :param user_id: id пользователя
+        :param target: Параметр что бы указать куда переходить назад
+        :return:
+        """
+        data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
+                "◀️ Назад": {"target": target, "action": "", "id": 0, "editid": user_id}
+                }
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target"],
+                                                                              name_items["action"],
+                                                                              name_items["id"],
+                                                                              name_items["editid"]))
+                ] for name, name_items in data.items()
+            ]
+        )
+
+    @staticmethod
+    async def pagination_transaction_ikb(target: str,
+                                         user_id: int,
+                                         action: str = None,
+                                         page: int = 0) -> InlineKeyboardMarkup:
+        """
+        Клавиатура пагинации проведенных операций пользователя
+        :param target:  Параметр что бы указать куда переходить назад
+        :param user_id: id пользователя
+        :param action: Не обязательный параметр, он необходим если в callback_data есть подзапрос для вкладки
+        :param page: текущая страница пагинации
+        :return:
+        """
+        orders = await CRUDTransaction.get_all(user_id=user_id)
+
+        orders_count = len(orders)
+
+        prev_page: int
+        next_page: int
+
+        if page == 0:
+            prev_page = orders_count - 1
+            next_page = page + 1
+        elif page == orders_count - 1:
+            prev_page = page - 1
+            next_page = 0
+        else:
+            prev_page = page - 1
+            next_page = page + 1
+
+        back_ikb = InlineKeyboardButton("◀️ Назад", callback_data=main_cb.new("Profile", "get_Profile", 0, 0))
+        prev_page_ikb = InlineKeyboardButton("←", callback_data=main_cb.new(target, action, prev_page, 0))
+        page = InlineKeyboardButton(f"{str(page + 1)}/{str(orders_count)}",
+                                    callback_data=main_cb.new("", "", 0, 0))
+        next_page_ikb = InlineKeyboardButton("→", callback_data=main_cb.new(target, action, next_page, 0))
+
+        if orders_count == 1:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+        else:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        prev_page_ikb,
+                        page,
+                        next_page_ikb,
+                    ],
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+
+    @staticmethod
     async def process_profile(callback: CallbackQuery = None, message: Message = None,
                               state: FSMContext = None) -> None:
 
@@ -182,27 +264,97 @@ class MainForm:
 
                 # Профиль
                 elif data.get("target") == "Profile":
-                    user = await CRUDUsers.get(user_id=callback.from_user.id)
-                    text = f"Профиль\n\n" \
-                           f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n"
-                    await callback.message.edit_text(text=text,
-                                                     reply_markup=await MainForm.back_ikb(user_id=callback.from_user.id,
-                                                                                          target="MainForm")
-                                                     )
+                    if data.get("action") == "get_Profile":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        transaction = await CRUDTransaction.get_all(user_id=user.id)
+
+                        text = f"Профиль\n\n" \
+                               f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n" \
+                               f"Количество сделок - {len(transaction)}"
+
+                        await callback.message.edit_text(text=text,
+                                                         reply_markup=await MainForm.profile_ikb(
+                                                             user_id=callback.from_user.id,
+                                                             target="MainForm")
+                                                         )
+
+                    elif data.get("action") == "get_transaction":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        transaction = await CRUDTransaction.get_all(user_id=user.id)
+
+                        if transaction:
+                            approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+
+                            text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
+                                   f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
+                                   f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
+                                   f"💸 Продано BYN: <i>{transaction[0].sale_BYN}\n</i>" \
+                                   f"👛 Кошелек <i>{transaction[0].wallet}</i>"
+
+                            await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
+                                                                  f"{text}",
+                                                             reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                 user_id=user.id,
+                                                                 target="Profile",
+                                                                 action="pagination_transaction"),
+                                                             parse_mode="HTML"
+                                                             )
+
+                        else:
+                            await callback.message.edit_text(text="Вы не совершали сделок 😞",
+                                                             reply_markup=await MainForm.back_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 target="Profile",
+                                                                 action="get_Profile")
+                                                             )
+
+                    elif data.get("action") == "pagination_transaction":
+                        page = int(data.get('id'))
+
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        transaction = await CRUDTransaction.get_all(user_id=user.id)
+
+                        if transaction:
+                            approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+
+                            text = f"🤝 Сделка № {transaction[page].id} {approved}\n\n" \
+                                   f"📈 Курс покупки: <i>{transaction[page].exchange_rate}\n</i>" \
+                                   f"   ₿  Куплено BTC: <i>{transaction[page].buy_BTC}\n</i>" \
+                                   f"💸 Продано BYN: <i>{transaction[page].sale_BYN}\n</i>" \
+                                   f"👛 Кошелек <i>{transaction[page].wallet}</i>"
+
+                            await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
+                                                                  f"{text}",
+                                                             reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                 user_id=user.id,
+                                                                 page=page,
+                                                                 target="Profile",
+                                                                 action="pagination_transaction"),
+                                                             parse_mode="HTML"
+                                                             )
+                        else:
+                            await callback.message.edit_text(text="Вы не совершали сделок 😞",
+                                                             reply_markup=await MainForm.back_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 target="Profile",
+                                                                 action="get_Profile")
+                                                             )
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
                     price = await Cryptocurrency.get_Cryptocurrency()
 
                     text = "💳 Купить криптовалюту: BTC за BYN\n"\
-                           f"1 Bitcoin = {price} BYN\n\n"\
+                           f"1 Bitcoin ₿ = {price} BYN " \
+                           f"<a href='https://www.coinbase.com/ru/converter/btc/byn'>Coinbase</a>\n\n"\
                            f"<i>Мин. сумма: 50.0 BYN</i>"
 
                     await callback.message.edit_text(text=text,
                                                      reply_markup=await MainForm.money_ikb(
                                                          user_id=callback.from_user.id,
                                                          target="MainForm"),
-                                                     parse_mode="HTML"
+                                                     parse_mode="HTML",
+                                                     disable_web_page_preview=True
                                                      )
 
                 # Меню покупки BTC
@@ -211,6 +363,10 @@ class MainForm:
                         price_BYN = int(data.get("id"))
                         price_BTC = await Cryptocurrency.get_Cryptocurrency()
                         bye = round(price_BYN / price_BTC, 8)
+
+                        await state.update_data(sale_BYN=price_BYN)
+                        await state.update_data(exchange_rate=price_BTC)
+                        await state.update_data(buy_BTC=bye)
 
                         text = "💳 Купить криптовалюту: BTC за BYN\n"\
                                f"1 Bitcoin = {price_BTC}\n\n" \
@@ -284,6 +440,8 @@ class MainForm:
                                "8. ПРИСЫЛАЕМ ЧЕК \n" \
                                "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
 
+                        await state.update_data(wallet=message.text)
+
                         await message.answer(text=f"Вы ввели кошелек <i>{message.text}</i>\n\n"
                                                   f"{text}",
                                              reply_markup=await MainForm.user_paid_ikb(),
@@ -305,9 +463,24 @@ class MainForm:
                             await MainState.UserPhoto.set()
                         else:
                             photo = message.photo[0].file_id
+
+                            get_data = await state.get_data()
+
+                            user = await CRUDUsers.get(user_id=message.from_user.id)
+                            transaction = await CRUDTransaction.add(transaction=TransactionSchema(user_id=user.id,
+                                                                                                  **get_data)
+                                                                    )
+
+                            text = f"Заявка № {transaction.id}\n\n" \
+                                   f"Курс: {get_data['exchange_rate']}\n" \
+                                   f"Получено BYN: {get_data['sale_BYN']}\n" \
+                                   f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
+                                   f"Кошелёк: {get_data['wallet']}"
+
                             for admin in CONFIG.BOT.ADMINS:
                                 await bot.send_photo(chat_id=admin, photo=photo,
-                                                     caption="Пользователь оплатил!")
+                                                     caption=f"Пользователь оплатил!\n\n"
+                                                             f"{text}")
 
                             await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
                                                       "выполнена мы вам сообщим.\n\n"
@@ -330,6 +503,11 @@ class MainForm:
                         else:
                             price_BTC = await Cryptocurrency.get_Cryptocurrency()
                             bye = round(int(user_money) / price_BTC, 8)
+
+                            await state.update_data(sale_BYN=user_money)
+                            await state.update_data(exchange_rate=price_BTC)
+                            await state.update_data(buy_BTC=bye)
+
                             text = "💳 Купить криптовалюту: BTC за BYN\n" \
                                    f"1 Bitcoin = {price_BTC}\n\n" \
                                    f"📢 Внимание!\n" \
