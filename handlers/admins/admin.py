@@ -4,7 +4,7 @@ from aiogram.dispatcher import FSMContext
 from filters import IsAdmin
 from keyboards.inline.admin.admin import admin_cb, AdminForm
 from loader import dp
-from states.users.AdminState import AdminState
+from states.admins.AdminState import AdminState
 
 
 @dp.message_handler(IsAdmin(), commands=["admin"], state=AdminState.all_states)
@@ -14,7 +14,8 @@ async def registration_start_state(message: types.Message, state: FSMContext):
 
 @dp.message_handler(IsAdmin(), commands=["admin"])
 async def registration_start(message: types.Message):
-    await message.answer(text="Админ панель")
+    await message.answer(text="Админ панель",
+                         reply_markup=await AdminForm.start_ikb())
 
 
 @dp.callback_query_handler(admin_cb.filter())
