@@ -386,6 +386,7 @@ class MainForm:
                     elif data.get("action") == "EnterAmount":
                         await callback.message.edit_text(text="Введите сумму в BYN:",
                                                          reply_markup=await MainForm.back_ikb(
+                                                             action="",
                                                              user_id=callback.from_user.id,
                                                              target="BuyBTC")
                                                          )
@@ -398,6 +399,7 @@ class MainForm:
                                                           f"Покупка - {bye} BTC",
                                                      reply_markup=await MainForm.back_ikb(
                                                          user_id=callback.from_user.id,
+                                                         action="",
                                                          target="BuyBTC")
                                                      )
                     await MainState.Wallet.set()
