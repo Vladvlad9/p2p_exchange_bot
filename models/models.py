@@ -19,11 +19,11 @@ class Transaction(Base):
     __tablename__ = 'transactions'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey("user.id", ondelete="NO ACTION"), nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
     exchange_rate = Column(Float, default=0)  # курс обмена
     buy_BTC = Column(Float, default=0)
     sale_BYN = Column(Float, default=0)
     wallet = Column(Text, default=None)
-    date_created_operations = Column(TIMESTAMP, default=datetime.now())
+    date_created = Column(TIMESTAMP, default=datetime.now())
     approved = Column(Boolean, default=False)
 
