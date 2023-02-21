@@ -35,12 +35,19 @@ class CRUDTransaction(object):
 
     @staticmethod
     @create_async_session
-    async def get(user_id: int,
+    async def get(user_id: int = None,
+                  transaction: int = None,
                   session: AsyncSession = None) -> TransactionInDBSchema | None:
-        transactions = await session.execute(
-            select(Transaction)
-            .where(Transaction.user_id == user_id)
-        )
+        if user_id:
+            transactions = await session.execute(
+                select(Transaction)
+                .where(Transaction.user_id == user_id)
+            )
+        else:
+            transactions = await session.execute(
+                select(Transaction)
+                .where(Transaction.id == transaction)
+            )
         if transaction := transactions.first():
             return TransactionInDBSchema(**transaction[0].__dict__)
 
@@ -62,10 +69,10 @@ class CRUDTransaction(object):
 
     @staticmethod
     @create_async_session
-    async def update(user: TransactionInDBSchema, session: AsyncSession = None) -> None:
+    async def update(transaction: TransactionInDBSchema, session: AsyncSession = None) -> None:
         await session.execute(
             update(Transaction)
-            .where(Transaction.id == user.id)
-            .values(**user.dict())
+            .where(Transaction.id == transaction.id)
+            .values(**transaction.dict())
         )
         await session.commit()
