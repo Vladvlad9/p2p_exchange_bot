@@ -15,9 +15,10 @@ main_cb = CallbackData("main", "target", "action", "id", "editId")
 
 class MainForm:
     @staticmethod
-    async def back_ikb(user_id: int, target: str, action: str = None) -> InlineKeyboardMarkup:
+    async def back_ikb(user_id: int, target: str, page: int = 0, action: str = None) -> InlineKeyboardMarkup:
         """
         Общая клавиатура для перехода на один шаг назад
+        :param page: Необходим для того когда переходит пользователь назад в профиле на определенную страницу
         :param action: Не обязательный параметр, он необходим если в callback_data есть подзапрос для вкладки
         :param user_id: id пользователя
         :param target: Параметр что бы указать куда переходить назад
@@ -26,7 +27,7 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action, page, user_id))
                 ]
             ]
         )
@@ -221,6 +222,7 @@ class MainForm:
 
         back_ikb = InlineKeyboardButton("◀️ Назад", callback_data=main_cb.new("Profile", "get_Profile", 0, 0))
         prev_page_ikb = InlineKeyboardButton("←", callback_data=main_cb.new(target, action, prev_page, 0))
+        check = InlineKeyboardButton("🧾 Чек", callback_data=main_cb.new("Profile", "get_check", page, 0))
         page = InlineKeyboardButton(f"{str(page + 1)}/{str(orders_count)}",
                                     callback_data=main_cb.new("", "", 0, 0))
         next_page_ikb = InlineKeyboardButton("→", callback_data=main_cb.new(target, action, next_page, 0))
@@ -228,6 +230,9 @@ class MainForm:
         if orders_count == 1:
             return InlineKeyboardMarkup(
                 inline_keyboard=[
+                    [
+                        check
+                    ],
                     [
                         back_ikb
                     ]
@@ -238,7 +243,7 @@ class MainForm:
                 inline_keyboard=[
                     [
                         prev_page_ikb,
-                        page,
+                        page, check,
                         next_page_ikb,
                     ],
                     [
@@ -290,15 +295,25 @@ class MainForm:
                                    f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
                                    f"💸 Продано BYN: <i>{transaction[0].sale_BYN}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[0].wallet}</i>"
-
-                            await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
-                                                                  f"{text}",
-                                                             reply_markup=await MainForm.pagination_transaction_ikb(
-                                                                 user_id=user.id,
-                                                                 target="Profile",
-                                                                 action="pagination_transaction"),
-                                                             parse_mode="HTML"
-                                                             )
+                            try:
+                                await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                     user_id=user.id,
+                                                                     target="Profile",
+                                                                     action="pagination_transaction"),
+                                                                 parse_mode="HTML"
+                                                                 )
+                            except BadRequest:
+                                await callback.message.delete()
+                                await callback.message.answer(text=f"<i>Мои сделки</i>\n\n"
+                                                                   f"{text}",
+                                                              reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                  user_id=user.id,
+                                                                  target="Profile",
+                                                                  action="pagination_transaction"),
+                                                              parse_mode="HTML"
+                                                              )
 
                         else:
                             await callback.message.edit_text(text="Вы не совершали сделок 😞",
@@ -322,16 +337,27 @@ class MainForm:
                                    f"   ₿  Куплено BTC: <i>{transaction[page].buy_BTC}\n</i>" \
                                    f"💸 Продано BYN: <i>{transaction[page].sale_BYN}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[page].wallet}</i>"
-
-                            await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
-                                                                  f"{text}",
-                                                             reply_markup=await MainForm.pagination_transaction_ikb(
-                                                                 user_id=user.id,
-                                                                 page=page,
-                                                                 target="Profile",
-                                                                 action="pagination_transaction"),
-                                                             parse_mode="HTML"
-                                                             )
+                            try:
+                                await callback.message.edit_text(text=f"<i>Мои сделки</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                     user_id=user.id,
+                                                                     page=page,
+                                                                     target="Profile",
+                                                                     action="pagination_transaction"),
+                                                                 parse_mode="HTML"
+                                                                 )
+                            except BadRequest:
+                                await callback.message.delete()
+                                await callback.message.answer(text=f"<i>Мои сделки</i>\n\n"
+                                                                   f"{text}",
+                                                              reply_markup=await MainForm.pagination_transaction_ikb(
+                                                                  user_id=user.id,
+                                                                  page=page,
+                                                                  target="Profile",
+                                                                  action="pagination_transaction"),
+                                                              parse_mode="HTML"
+                                                              )
                         else:
                             await callback.message.edit_text(text="Вы не совершали сделок 😞",
                                                              reply_markup=await MainForm.back_ikb(
@@ -339,6 +365,29 @@ class MainForm:
                                                                  target="Profile",
                                                                  action="get_Profile")
                                                              )
+
+                    elif data.get('action') == 'get_check':
+                        try:
+                            check = int(data.get('id'))
+
+                            user = await CRUDUsers.get(user_id=callback.from_user.id)
+                            transaction = await CRUDTransaction.get_all(user_id=user.id)
+
+                            if transaction[check].check != "None":
+                                page = int(data.get("id"))
+                                photo = open(f'user_check/{transaction[page].check}.jpg', 'rb')
+                                await callback.message.delete()
+                                await bot.send_photo(chat_id=callback.from_user.id, photo=photo,
+                                                     caption=f"Фото чека",
+                                                     reply_markup=await MainForm.back_ikb(user_id=callback.from_user.id,
+                                                                                          target="Profile",
+                                                                                          action="pagination_transaction",
+                                                                                          page=check)
+                                                     )
+                            else:
+                                await callback.answer(text="Фото чека не добавлено")
+                        except Exception as e:
+                            print(e)
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
@@ -464,14 +513,26 @@ class MainForm:
                                                       "Попробуйте загрузить еще раз")
                             await MainState.UserPhoto.set()
                         else:
+                            get_photo = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+
                             photo = message.photo[0].file_id
 
                             get_data = await state.get_data()
 
                             user = await CRUDUsers.get(user_id=message.from_user.id)
+
                             transaction = await CRUDTransaction.add(transaction=TransactionSchema(user_id=user.id,
                                                                                                   **get_data)
                                                                     )
+
+                            await bot.download_file(file_path=get_photo.file_path,
+                                                    destination=f'user_check/{transaction.id}_{message.from_user.id}.jpg',
+                                                    timeout=12,
+                                                    chunk_size=1215000)
+
+                            get_transaction = await CRUDTransaction.get(transaction=transaction.id)
+                            get_transaction.check = f'{transaction.id}_{message.from_user.id}'
+                            await CRUDTransaction.update(transaction=get_transaction)
 
                             text = f"Заявка № {transaction.id}\n\n" \
                                    f"Курс: {get_data['exchange_rate']}\n" \
