@@ -35,12 +35,19 @@ class CRUDUsers(object):
 
     @staticmethod
     @create_async_session
-    async def get(user_id: int,
+    async def get(user_id: int = None,
+                  id: int = None,
                   session: AsyncSession = None) -> UserInDBSchema | None:
-        users = await session.execute(
-            select(User)
-            .where(User.user_id == user_id)
-        )
+        if user_id:
+            users = await session.execute(
+                select(User)
+                .where(User.user_id == user_id)
+            )
+        else:
+            users = await session.execute(
+                select(User)
+                .where(User.id == id)
+            )
         if user := users.first():
             return UserInDBSchema(**user[0].__dict__)
 

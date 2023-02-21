@@ -330,7 +330,7 @@ class MainForm:
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
 
                         if transaction:
-                            approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+                            approved = "✅ подтверждена ✅" if transaction[page].approved else "❌ не подтверждена ❌"
 
                             text = f"🤝 Сделка № {transaction[page].id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction[page].exchange_rate}\n</i>" \
