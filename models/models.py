@@ -26,4 +26,5 @@ class Transaction(Base):
     wallet = Column(Text, default=None)
     date_created = Column(TIMESTAMP, default=datetime.now())
     approved = Column(Boolean, default=False)
+    check = Column(Text, default="None")
 

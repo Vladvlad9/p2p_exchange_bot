@@ -10,6 +10,7 @@ class TransactionSchema(BaseModel):
     wallet: str = Field(default=None)
     date_created: datetime = Field(default=datetime.now())
     approved: bool = Field(default=False)
+    check: str = Field(default="None")
 
 
 class TransactionInDBSchema(TransactionSchema):
