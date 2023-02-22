@@ -41,12 +41,12 @@ class CRUDTransaction(object):
         if user_id:
             transactions = await session.execute(
                 select(Transaction)
-                .where(Transaction.user_id == user_id)
+                .where(Transaction.user_id == user_id).order_by(Transaction.id)
             )
         else:
             transactions = await session.execute(
                 select(Transaction)
-                .where(Transaction.id == transaction)
+                .where(Transaction.id == transaction).order_by(Transaction.id)
             )
         if transaction := transactions.first():
             return TransactionInDBSchema(**transaction[0].__dict__)
@@ -57,11 +57,11 @@ class CRUDTransaction(object):
         try:
             if user_id:
                 users = await session.execute(
-                    select(Transaction).where(Transaction.user_id == user_id)
+                    select(Transaction).where(Transaction.user_id == user_id).order_by(Transaction.id)
                 )
             else:
                 users = await session.execute(
-                    select(Transaction)
+                    select(Transaction).order_by(Transaction.id)
                 )
             return [TransactionInDBSchema(**user[0].__dict__) for user in users]
         except ValidationError as e:

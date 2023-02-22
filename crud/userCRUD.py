@@ -41,12 +41,12 @@ class CRUDUsers(object):
         if user_id:
             users = await session.execute(
                 select(User)
-                .where(User.user_id == user_id)
+                .where(User.user_id == user_id).order_by(User.id)
             )
         else:
             users = await session.execute(
                 select(User)
-                .where(User.id == id)
+                .where(User.id == id).order_by(User.id)
             )
         if user := users.first():
             return UserInDBSchema(**user[0].__dict__)
