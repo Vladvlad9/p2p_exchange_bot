@@ -4,7 +4,7 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
-from crud import CRUDUsers, CRUDTransaction
+from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
 from schemas import TransactionSchema
@@ -276,14 +276,14 @@ class AdminForm:
 
                     elif data.get("action") == "get_AllUsers":
                         transaction = await CRUDTransaction.get_all()
-
+                        currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
                         if transaction:
                             approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
 
                             text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
-                                   f"💸 Продано BYN: <i>{transaction[0].sale_BYN}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction[0].sale}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[0].wallet}</i>"
 
                             await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
@@ -320,6 +320,7 @@ class AdminForm:
 
                         user = await CRUDUsers.get(id=get_user_id)
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
+                        currency = await CRUDCurrency.get(currency_id=transaction[page].currency_id)
 
                         if transaction:
                             approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
@@ -327,7 +328,7 @@ class AdminForm:
                             text = f"🤝 Сделка № {transaction[page].id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction[page].exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{transaction[page].buy_BTC}\n</i>" \
-                                   f"💸 Продано BYN: <i>{transaction[page].sale_BYN}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction[page].sale}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[page].wallet}</i>"
                             try:
                                 await callback.message.edit_text(text=f"<i>Сделки пользователя</i>\n\n"
@@ -368,11 +369,12 @@ class AdminForm:
 
                         if transaction:
                             approved = "✅ одобрена ✅" if transaction[page].approved else "❌ не одобрена ❌"
+                            currency = await CRUDCurrency.get(currency_id=transaction[page].currency_id)
 
                             text = f"🤝 Сделка № {transaction[page].id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction[page].exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{transaction[page].buy_BTC}\n</i>" \
-                                   f"💸 Продано BYN: <i>{transaction[page].sale_BYN}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction[page].sale}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[page].wallet}</i>"
 
                             if transaction[page].check != "None":
@@ -412,13 +414,14 @@ class AdminForm:
 
                         user = await CRUDUsers.get(id=get_user_id)
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
+                        currency = await CRUDCurrency.get(currency_id=transaction[get_page_id].currency_id)
 
                         transaction[get_page_id].approved = True
                         await CRUDTransaction.update(transaction=transaction[get_page_id])
                         text = f"✅ Вам потвердили сделку № {transaction[get_page_id].id} ✅\n\n"\
                                f"📈 Курс покупки: <i>{transaction[get_page_id].exchange_rate}\n</i>" \
                                f"   ₿  Куплено BTC: <i>{transaction[get_page_id].buy_BTC}\n</i>" \
-                               f"💸 Продано BYN: <i>{transaction[get_page_id].sale_BYN}\n</i>" \
+                               f"💸 Продано {currency.name}: <i>{transaction[get_page_id].sale}\n</i>" \
                                f"👛 Кошелек <i>{transaction[get_page_id].wallet}</i>"
 
                         await bot.send_message(chat_id=user.user_id, text=text )
@@ -433,12 +436,14 @@ class AdminForm:
 
                         transaction = await CRUDTransaction.get(transaction=get_page_id)
                         user = await CRUDUsers.get(id=transaction.user_id)
+                        currency = await CRUDCurrency.get(currency_id=transaction.currency_id)
+
                         transaction.approved = True
                         await CRUDTransaction.update(transaction=transaction)
                         text = f"✅ Вам потвердили сделку № {transaction.id} ✅\n\n"\
                                f"📈 Курс покупки: <i>{transaction.exchange_rate}\n</i>" \
                                f"   ₿  Куплено BTC: <i>{transaction.buy_BTC}\n</i>" \
-                               f"💸 Продано BYN: <i>{transaction.sale_BYN}\n</i>" \
+                               f"💸 Продано {currency.name}: <i>{transaction.sale}\n</i>" \
                                f"👛 Кошелек <i>{transaction.wallet}</i>"
 
                         await bot.send_message(chat_id=user.user_id, text=text)
@@ -488,11 +493,12 @@ class AdminForm:
                         transaction = await CRUDTransaction.get(transaction=int(message.text))
                         if transaction:
                             approved = "✅ одобрена ✅" if transaction.approved else "❌ не одобрена ❌"
+                            currency = await CRUDCurrency.get(currency_id=transaction.currency_id)
 
                             text = f"🤝 Сделка № {transaction.id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction.exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{transaction.buy_BTC}\n</i>" \
-                                   f"💸 Продано BYN: <i>{transaction.sale_BYN}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction.sale}\n</i>" \
                                    f"👛 Кошелек <i>{transaction.wallet}</i>"
                             if transaction.check != "None":
                                 try:
@@ -538,11 +544,12 @@ class AdminForm:
 
                         if transaction:
                             approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+                            currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
 
                             text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
                                    f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
-                                   f"💸 Продано BYN: <i>{transaction[0].sale_BYN}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction[0].sale}\n</i>" \
                                    f"👛 Кошелек <i>{transaction[0].wallet}</i>"
 
                             await message.answer(text="<i>Сделки пользователя</i>\n\n"
