@@ -5,6 +5,7 @@ from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
 from crud import CRUDUsers, CRUDTransaction
+from crud.referralCRUD import CRUDReferral
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
 from schemas import TransactionSchema
@@ -177,6 +178,7 @@ class MainForm:
         :return:
         """
         data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
+                "👨‍👦‍👦 Рефералы": {"target": "Profile", "action": "get_referrals", "id": 0, "editid": user_id},
                 "◀️ Назад": {"target": target, "action": "", "id": 0, "editid": user_id}
                 }
         return InlineKeyboardMarkup(
@@ -275,12 +277,15 @@ class MainForm:
 
                         text = f"Профиль\n\n" \
                                f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n" \
-                               f"Количество сделок - {len(transaction)}"
+                               f"Количество сделок - {len(transaction)}\n\n" \
+                               f"Реферальная ссылка: \n" \
+                               f"<code>{CONFIG.BOT.BOT_LINK}?start={callback.from_user.id}</code>"
 
                         await callback.message.edit_text(text=text,
                                                          reply_markup=await MainForm.profile_ikb(
                                                              user_id=callback.from_user.id,
-                                                             target="MainForm")
+                                                             target="MainForm"),
+                                                         parse_mode="HTML"
                                                          )
 
                     elif data.get("action") == "get_transaction":
@@ -388,6 +393,19 @@ class MainForm:
                                 await callback.answer(text="Фото чека не добавлено")
                         except Exception as e:
                             print(e)
+
+                    elif data.get("action") == "get_referrals":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        referrals = await CRUDReferral.get_all(user_id=user.id)
+
+                        text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}"
+                        await callback.message.edit_text(text=text,
+                                                         reply_markup=await MainForm.back_ikb(
+                                                             user_id=callback.from_user.id,
+                                                             target="Profile",
+                                                             page=0,
+                                                             action="get_Profile")
+                                                         )
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
