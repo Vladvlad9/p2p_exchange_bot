@@ -2,9 +2,10 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 
 from crud import CRUDUsers
+from crud.referralCRUD import CRUDReferral
 from keyboards.inline.users.start_ikb import MainForm, main_cb
-from loader import dp
-from schemas import UserSchema
+from loader import dp, bot
+from schemas import UserSchema, ReferralSchema
 from states.users.MainState import MainState
 
 
@@ -49,8 +50,27 @@ async def registration_start(message: types.Message):
                                   "Выберите операцию",
                              reply_markup=await MainForm.start_ikb(message.from_user.id))
     else:
+        start_commands = message.text
+        referral_id = str(start_commands[7:])
+        if str(referral_id) != "":
+            if str(referral_id) != str(message.from_user.id):
+                current_user = await CRUDUsers.get(user_id=int(referral_id))
+                await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
+                await CRUDReferral.add(referral=ReferralSchema(user_id=current_user.id,
+                                                               referral_id=int(referral_id))
+                                       )
+                try:
+                    await bot.send_message(chat_id=int(referral_id),
+                                           text="По вашей ссылке зарегистрировался новый пользователь!")
+                except Exception:
+                    pass
+            else:
+                await message.answer(text="Нельзя регистрироваться по собственной реферальной ссылке!")
+        else:
+            await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
+
         await message.delete()
-        await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
+
         text = "Правила бота!\n"\
                "Условия для совершения сделки по приобретению BTC за BYN.\n"\
                "<i>1.  Этапы сделки:</i>\n"\
