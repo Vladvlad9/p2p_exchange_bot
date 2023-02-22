@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class BotSchema(BaseModel):
     TOKEN: str
     ADMINS: list[int]
+    BOT_LINK: str
 
 
 class PaymentSchema(BaseModel):
