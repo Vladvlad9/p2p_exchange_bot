@@ -53,7 +53,7 @@ class CRUDTransaction(object):
 
     @staticmethod
     @create_async_session
-    async def get_all(user_id: int, session: AsyncSession = None) -> list[TransactionInDBSchema]:
+    async def get_all(user_id: int = None, session: AsyncSession = None) -> list[TransactionInDBSchema]:
         try:
             if user_id:
                 users = await session.execute(
