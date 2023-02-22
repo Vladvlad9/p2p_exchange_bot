@@ -18,8 +18,8 @@ class CRUDReferral(object):
         session.add(referrals)
         try:
             await session.commit()
-        except IntegrityError:
-            pass
+        except IntegrityError as e:
+            print(e)
         else:
             await session.refresh(referrals)
             return ReferralInDBSchema(**referrals.__dict__)
@@ -46,12 +46,18 @@ class CRUDReferral(object):
 
     @staticmethod
     @create_async_session
-    async def get_all(session: AsyncSession = None) -> list[ReferralInDBSchema]:
+    async def get_all(user_id: int = None, session: AsyncSession = None) -> list[ReferralInDBSchema]:
         try:
-            referrals = await session.execute(
-                select(Referral)
-                    .order_by(Referral.id)
-            )
+            if user_id:
+                referrals = await session.execute(
+                    select(Referral).where(Referral.user_id == user_id)
+                        .order_by(Referral.id)
+                )
+            else:
+                referrals = await session.execute(
+                    select(Referral)
+                        .order_by(Referral.id)
+                )
             return [ReferralInDBSchema(**referral[0].__dict__) for referral in referrals]
         except ValidationError as e:
             print(e)
