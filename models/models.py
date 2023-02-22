@@ -28,3 +28,11 @@ class Transaction(Base):
     approved = Column(Boolean, default=False)
     check = Column(Text, default="None")
 
+
+class Referral(Base):
+    __tablename__ = 'referrals'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
+    referral_id = Column(BigInteger, default=True)
+
