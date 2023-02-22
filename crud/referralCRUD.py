@@ -29,7 +29,7 @@ class CRUDReferral(object):
     async def delete(referral_id: int, session: AsyncSession = None) -> None:
         await session.execute(
             delete(Referral)
-            .where(Referral.id == usreferral_ider_id)
+            .where(Referral.id == referral_id)
         )
         await session.commit()
 
