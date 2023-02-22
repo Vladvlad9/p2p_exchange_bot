@@ -117,27 +117,40 @@ class AdminForm:
     async def check_confirmation_ikb(user_id: int, page: int = 0, action_back: str = None,
                                      action_confirm: str = None) -> InlineKeyboardMarkup:
         """
-                Клавиатура главного меню админ панели
-                :return:
-                """
+        Клавиатура для взаимодействия с транзакцией пользователя
+        :param user_id: id Пользователя
+        :param page: не обходимо для того что бы возвращаться к определенной странице
+        :param action_back: не обходимо для того что бы возвращаться на определеную страницу
+        :param action_confirm: не обходимо для того что бы возвращаться на определеную страницу
+        :return:
+        """
+        user = await CRUDUsers.get(id=user_id)
+        chat = await bot.get_chat(chat_id=user.user_id)
+        button_url = chat.user_url
+
         data = {"✅ Потвердить Оплату": {"target": "Users", "action": action_confirm, "id": user_id, "editid": page},
-                "📲 Связаться": {"target": "Users", "action": "get_Newsletter", "id": user_id, "editid": page},
                 "◀️ Назад": {"target": "Users", "action": action_back, "id": page, "editid": user_id},
                 }
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
+                    InlineKeyboardButton(text="📲 Связаться", url=button_url)
+                ]
+
+            ] + [
+                [
                     InlineKeyboardButton(text=name, callback_data=admin_cb.new(name_items["target"],
                                                                                name_items["action"],
                                                                                name_items["id"],
-                                                                               name_items["editid"]))
+                                                                               name_items["editid"])
+                                         )
                 ] for name, name_items in data.items()
             ]
         )
 
     @staticmethod
     async def pagination_transaction_ikb(target: str,
-                                         user_id: int,
+                                         user_id: int = None,
                                          action: str = None,
                                          action_back: str = None,
                                          page: int = 0) -> InlineKeyboardMarkup:
@@ -150,7 +163,10 @@ class AdminForm:
         :param page: текущая страница пагинации
         :return:
         """
-        orders = await CRUDTransaction.get_all(user_id=user_id)
+        if user_id:
+            orders = await CRUDTransaction.get_all(user_id=user_id)
+        else:
+            orders = await CRUDTransaction.get_all()
 
         orders_count = len(orders)
 
@@ -259,7 +275,30 @@ class AdminForm:
                                                           reply_markup=await AdminForm.users_ikb())
 
                     elif data.get("action") == "get_AllUsers":
-                        pass
+                        transaction = await CRUDTransaction.get_all()
+
+                        if transaction:
+                            approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+
+                            text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
+                                   f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
+                                   f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
+                                   f"💸 Продано BYN: <i>{transaction[0].sale_BYN}\n</i>" \
+                                   f"👛 Кошелек <i>{transaction[0].wallet}</i>"
+
+                            await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
+                                                                  f"{text}",
+                                                             reply_markup=await AdminForm.pagination_transaction_ikb(
+                                                                 target="Users",
+                                                                 action="pagination_user_transaction",
+                                                                 action_back="get_Users",
+                                                                 user_id=transaction[0].user_id),
+                                                             parse_mode="HTML"
+                                                             )
+                            await state.finish()
+                        else:
+                            await message.answer(text="Не найдено")
+                            await state.finish()
 
                     elif data.get("action") == "get_CheckNumber":
                         await callback.message.edit_text(text="Введите номер чек",
@@ -408,6 +447,9 @@ class AdminForm:
                         await callback.message.answer(text="Вы успешно потвердили сделку",
                                                       reply_markup=await AdminForm.users_ikb()
                                                       )
+
+                    elif data.get("action") == "get_ContactUser":
+                        pass
 
         if message:
             await message.delete()
