@@ -44,3 +44,13 @@ class Currency(Base):
     id = Column(Integer, primary_key=True)
     name = Column(Text)
 
+
+class Wallet(Base):
+    __tablename__ = 'wallets'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
+    address = Column(Text)
+    balance = Column(Float, default=0)
+    passphrase = Column(Text)
+

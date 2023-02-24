@@ -6,9 +6,11 @@ from aiogram.utils.exceptions import BadRequest
 from config import CONFIG
 from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from crud.referralCRUD import CRUDReferral
+from crud.walCRUD import CRUDWallet
+from handlers.users.CreateWallet import CreateWallet
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
-from schemas import TransactionSchema
+from schemas import TransactionSchema, WalletSchema
 from states.users.MainState import MainState
 
 main_cb = CallbackData("main", "target", "action", "id", "editId")
@@ -58,6 +60,22 @@ class MainForm:
                                      count=bye,
                                      target="BuyBTC")
                                  )
+
+    @staticmethod
+    async def next_ikb() -> InlineKeyboardMarkup:
+        """
+        Клавиатура необходима, что бы пользователь запомнил секретную фразу и перешел к завершению создании кошелька
+        :return:
+        """
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Продолжить ➡️", callback_data=main_cb.new("Profile", "get_NextWallet",
+                                                                                         0, 0)
+                                         )
+                ]
+            ]
+        )
 
     @staticmethod
     async def back_ikb(user_id: int, target: str, page: int = 0, action: str = None) -> InlineKeyboardMarkup:
@@ -253,6 +271,44 @@ class MainForm:
         )
 
     @staticmethod
+    async def wallet_user_ikb(user_id: int, action_back: str, wallet_exists: bool) -> InlineKeyboardMarkup:
+        """
+        Клавиатура для ввода BTC кошелька
+        :param wallet_exists: Проверка на существование кошелька, если есть выводить клавиатуру только с кнопкой назад,
+        если не существует тогда выводить клавиатуру с кнопкой создать
+        :param action_back: Параметр что бы указать куда переходить назад
+        :param user_id: id пользователя
+        :return:
+        """
+
+        data = {
+            "➕ Создать": {"target": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
+            "◀️ Назад": {"target": "Profile", "action": action_back, "id": 0, "editid": user_id},
+        }
+        if wallet_exists:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new("Profile", action_back,
+                                                                                        0, user_id)
+                                             )
+                    ]
+                ]
+            )
+        else:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target"],
+                                                                              name_items["action"],
+                                                                              name_items["id"],
+                                                                              name_items["editid"])
+                                             )
+                    ] for name, name_items in data.items()
+                ]
+            )
+
+    @staticmethod
     async def start_ikb(user_id: int) -> InlineKeyboardMarkup:
         """
         Клавиатура главного меню
@@ -291,6 +347,7 @@ class MainForm:
         """
         data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
                 "👨‍👦‍👦 Рефералы": {"target": "Profile", "action": "get_referrals", "id": 0, "editid": user_id},
+                "👛 Кошелек": {"target": "Profile", "action": "get_userWallet", "id": 0, "editid": user_id},
                 "◀️ Назад": {"target": target, "action": "", "id": 0, "editid": user_id}
                 }
         return InlineKeyboardMarkup(
@@ -519,6 +576,58 @@ class MainForm:
                                                              target="Profile",
                                                              page=0,
                                                              action="get_Profile")
+                                                         )
+
+                    elif data.get("action") == "get_userWallet":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+                        if wallet:
+                            await callback.message.edit_text(text=f"Ваш адрес кошелька\n"
+                                                                  f"{wallet.address}\n"
+                                                                  f"Баланс : {wallet.balance}",
+                                                             reply_markup=await MainForm.wallet_user_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 action_back="get_Profile",
+                                                                 wallet_exists=True)
+                                                             )
+                        else:
+                            await callback.message.edit_text(text="У вас нету кошелька",
+                                                             reply_markup=await MainForm.wallet_user_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 action_back="get_Profile",
+                                                                 wallet_exists=False)
+                                                             )
+
+                    elif data.get("action") == "get_createWallet":
+                        get_wallet = await CreateWallet.create_wallet(label=f"{str(callback.from_user.id)}")
+                        if get_wallet:
+                            address = str(get_wallet['wallet']['address'])
+                            passphrase = str(get_wallet['wallet']['passphrase'])
+                            user = await CRUDUsers.get(user_id=callback.from_user.id)
+
+                            await CRUDWallet.add(wallet=WalletSchema(user_id=user.id,
+                                                                     address=address,
+                                                                     passphrase=passphrase)
+                                                 )
+                            await callback.message.edit_text(text=f"Запомните ваш ключ востановления\n\n"
+                                                                  f"{passphrase}",
+                                                             reply_markup=await MainForm.next_ikb()
+                                                             )
+                        else:
+                            pass
+
+                    elif data.get("action") == "get_NextWallet":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+
+                        await callback.message.edit_text(text=f"Ваш адрес кошелька\n"
+                                                              f"<code>{wallet.address}</code>\n"
+                                                              f"Баланс : {wallet.balance}",
+                                                         reply_markup=await MainForm.wallet_user_ikb(
+                                                             user_id=callback.from_user.id,
+                                                             action_back="get_Profile",
+                                                             wallet_exists=True),
+                                                         parse_mode="HTML"
                                                          )
 
                 # Меню выбора количесво суммы для покупки BTC

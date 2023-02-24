@@ -22,10 +22,17 @@ class CoinbaseSchema(BaseModel):
     RUB: str
 
 
+class BlockIoSchemas(BaseModel):
+    API_KEY: str
+    SECRET_PIN: str
+    VERSION: int
+
+
 class ConfigSchema(BaseModel):
     BOT: BotSchema
     PAYMENT: PaymentSchema
     COMMISSION: CommissionSchema
     COINBASE: CoinbaseSchema
+    BLOCK_IO: BlockIoSchemas
 
     DATABASE: str

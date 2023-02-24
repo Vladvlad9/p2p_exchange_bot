@@ -31,10 +31,11 @@ class Cryptocurrency:
 
     @staticmethod
     async def Check_Wallet(btc_address: str) -> bool:
-        transactions_url = 'https://blockchain.info/rawaddr/' + btc_address
+        #transactions_url = 'https://blockchain.info/rawaddr/' + "12c6DSiU4Rq3P4ZxziKxzrL5LmMBrzjrJX"
         try:
-            df = pandas.read_json(transactions_url)
-            transactions = df['txs']
+            url = f'https://blockchain.info/rawaddr/{btc_address}'
+            x = requests.get(url)
+            wallet = x.json()
             return True
         except Exception as e:
             print(e)
