@@ -3,6 +3,7 @@ import pandas
 from requests import HTTPError
 
 from config import CONFIG
+from bit import PrivateKeyTestnet
 
 
 class Cryptocurrency:
@@ -31,12 +32,22 @@ class Cryptocurrency:
 
     @staticmethod
     async def Check_Wallet(btc_address: str) -> bool:
-        #transactions_url = 'https://blockchain.info/rawaddr/' + "12c6DSiU4Rq3P4ZxziKxzrL5LmMBrzjrJX"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:94.0) Gecko/20100101 Firefox/94.0'
+        }
+
+        proxies = {
+            'http': 'http://45.155.203.112:8000'
+        }
+
         try:
-            url = f'https://blockchain.info/rawaddr/{btc_address}'
-            x = requests.get(url)
-            wallet = x.json()
-            return True
+            url = f'https://blockchain.info/q/addressbalance/{btc_address}'
+            #get_url = requests.get(url)
+            get_url = requests.get(url=url, headers=headers, proxies=proxies)
+            if get_url.status_code == 200:
+                return True
+            else:
+                return False
         except Exception as e:
             print(e)
             return False

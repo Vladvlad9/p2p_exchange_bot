@@ -1,3 +1,5 @@
+import base64
+
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
@@ -316,8 +318,9 @@ class MainForm:
         :return:
         """
         data = {
-            "💳 Купить BTC": {"target": "BuyBTC", "action": "get_BuyBTC", "id": 0, "editid": user_id},
-            "💳 Продать BTC": {"target": "SellBTC", "action": "get_SellBTC", "id": 0, "editid": user_id},
+            "BYN 🇧🇾": {"target": "Pay", "action": "get_BUN", "id": "BYN", "editid": user_id},
+            "RUB 🇷🇺": {"target": "Pay", "action": "get_RUB", "id": "RUB", "editid": user_id},
+            "BTC ₿": {"target": "SellBTC", "action": "get_SellBTC", "id": 0, "editid": user_id},
         }
 
         return InlineKeyboardMarkup(
@@ -449,13 +452,13 @@ class MainForm:
                                f"Количество сделок - {len(transaction)}\n\n" \
                                f"Реферальная ссылка: \n" \
                                f"<code>{CONFIG.BOT.BOT_LINK}?start={callback.from_user.id}</code>"
-
-                        await callback.message.edit_text(text=text,
-                                                         reply_markup=await MainForm.profile_ikb(
-                                                             user_id=callback.from_user.id,
-                                                             target="MainForm"),
-                                                         parse_mode="HTML"
-                                                         )
+                        await callback.message.delete()
+                        await callback.message.answer(text=text,
+                                                      reply_markup=await MainForm.profile_ikb(
+                                                          user_id=callback.from_user.id,
+                                                          target="MainForm"),
+                                                      parse_mode="HTML"
+                                                      )
 
                     elif data.get("action") == "get_transaction":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
@@ -582,14 +585,20 @@ class MainForm:
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         wallet = await CRUDWallet.get(user_id=user.id)
                         if wallet:
-                            await callback.message.edit_text(text=f"Ваш адрес кошелька\n"
-                                                                  f"{wallet.address}\n"
-                                                                  f"Баланс : {wallet.balance}",
-                                                             reply_markup=await MainForm.wallet_user_ikb(
-                                                                 user_id=callback.from_user.id,
-                                                                 action_back="get_Profile",
-                                                                 wallet_exists=True)
-                                                             )
+                            qr_code = f"https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl={wallet.address}"
+                            await callback.message.delete()
+                            await bot.send_photo(photo=qr_code,
+                                                 chat_id=callback.from_user.id,
+                                                 caption=f"Ваш адрес кошелька\n"
+                                                         f"<code>{wallet.address}</code>\n"
+                                                         f"Баланс : "
+                                                         f"{await CreateWallet.get_balance(wallet=wallet.address)}",
+                                                 reply_markup=await MainForm.wallet_user_ikb(
+                                                     user_id=callback.from_user.id,
+                                                     action_back="get_Profile",
+                                                     wallet_exists=True),
+                                                 parse_mode="HTML"
+                                                 )
                         else:
                             await callback.message.edit_text(text="У вас нету кошелька",
                                                              reply_markup=await MainForm.wallet_user_ikb(
@@ -619,16 +628,18 @@ class MainForm:
                     elif data.get("action") == "get_NextWallet":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         wallet = await CRUDWallet.get(user_id=user.id)
-
-                        await callback.message.edit_text(text=f"Ваш адрес кошелька\n"
-                                                              f"<code>{wallet.address}</code>\n"
-                                                              f"Баланс : {wallet.balance}",
-                                                         reply_markup=await MainForm.wallet_user_ikb(
-                                                             user_id=callback.from_user.id,
-                                                             action_back="get_Profile",
-                                                             wallet_exists=True),
-                                                         parse_mode="HTML"
-                                                         )
+                        qr_code = f"https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl={wallet.address}"
+                        await bot.send_photo(photo=qr_code,
+                                             chat_id=callback.from_user.id,
+                                             caption=f"Ваш адрес кошелька\n"
+                                                     f"<code>{wallet.address}</code>\n"
+                                                     f"Баланс : {wallet.balance}",
+                                             reply_markup=await MainForm.wallet_user_ikb(
+                                                 user_id=callback.from_user.id,
+                                                 action_back="get_Profile",
+                                                 wallet_exists=True),
+                                             parse_mode="HTML"
+                                             )
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
@@ -683,7 +694,7 @@ class MainForm:
                         await callback.message.edit_text(text=text,
                                                          reply_markup=await MainForm.money_entry_ikb(
                                                              user_id=callback.from_user.id,
-                                                             target="BuyBTC",
+                                                             target="MainForm",
                                                              currency="BYN"),
                                                          parse_mode="HTML",
                                                          disable_web_page_preview=True
@@ -700,7 +711,7 @@ class MainForm:
                         await callback.message.edit_text(text=text,
                                                          reply_markup=await MainForm.money_entry_ikb(
                                                              user_id=callback.from_user.id,
-                                                             target="BuyBTC",
+                                                             target="MainForm",
                                                              currency="RUB"),
                                                          parse_mode="HTML",
                                                          disable_web_page_preview=True
