@@ -1,3 +1,5 @@
+import random
+
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
@@ -149,6 +151,26 @@ class AdminForm:
         )
 
     @staticmethod
+    async def reconfirm_transaction() -> InlineKeyboardMarkup:
+
+        data = {"✅ Потвердить Оплату": {"target": "Users", "action": action_confirm, "id": user_id, "editid": page},
+                "◀️ Назад": {"target": "Users", "action": action_back, "id": page, "editid": user_id},
+                }
+
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=name, callback_data=admin_cb.new(name_items["target"],
+                                                                               name_items["action"],
+                                                                               name_items["id"],
+                                                                               name_items["editid"])
+                                         )
+                ] for name, name_items in data.items()
+
+                            ]
+        )
+
+    @staticmethod
     async def pagination_transaction_ikb(target: str,
                                          user_id: int = None,
                                          action: str = None,
@@ -214,6 +236,15 @@ class AdminForm:
                     ]
                 ]
             )
+
+    @staticmethod
+    async def captch():
+        numb_1 = random.randint(1, 10)
+        numb_2 = random.randint(1, 10)
+
+        itog = numb_1 + numb_2
+
+        return numb_1, numb_2, itog
 
     @staticmethod
     async def process_admin_profile(callback: CallbackQuery = None, message: Message = None,
@@ -291,8 +322,7 @@ class AdminForm:
                                                              reply_markup=await AdminForm.pagination_transaction_ikb(
                                                                  target="Users",
                                                                  action="pagination_user_transaction",
-                                                                 action_back="get_Users",
-                                                                 user_id=transaction[0].user_id),
+                                                                 action_back="get_Users"),
                                                              parse_mode="HTML"
                                                              )
                             await state.finish()
@@ -388,7 +418,7 @@ class AdminForm:
                                                              page=page,
                                                              user_id=user.id,
                                                              action_back="pagination_user_transaction",
-                                                             action_confirm="get_One_ConfirmPayment")
+                                                             action_confirm="captcha_confirm")
                                                          )
                                 except FileNotFoundError:
                                     pass
@@ -400,7 +430,7 @@ class AdminForm:
                                                                      page=page,
                                                                      user_id=user.id,
                                                                      action_back="pagination_user_transaction",
-                                                                     action_confirm="get_One_ConfirmPayment")
+                                                                     action_confirm="captcha_confirm")
                                                                  )
                         else:
                             await callback.message.edit_text(text="Не найдено",
@@ -432,29 +462,41 @@ class AdminForm:
                                                       )
 
                     elif data.get('action') == "get_One_ConfirmPayment":
-                        get_page_id = int(data.get('editId'))
+                        try:
+                            get_page_id = int(data.get('editId'))
+                            get_user_id = int(data.get('id'))
 
-                        transaction = await CRUDTransaction.get(transaction=get_page_id)
-                        user = await CRUDUsers.get(id=transaction.user_id)
-                        currency = await CRUDCurrency.get(currency_id=transaction.currency_id)
+                            user = await CRUDUsers.get(id=get_user_id)
+                            transaction = await CRUDTransaction.get_all(user_id=user.id)
 
-                        transaction.approved = True
-                        await CRUDTransaction.update(transaction=transaction)
-                        text = f"✅ Вам потвердили сделку № {transaction.id} ✅\n\n"\
-                               f"📈 Курс покупки: <i>{transaction.exchange_rate}\n</i>" \
-                               f"   ₿  Куплено BTC: <i>{transaction.buy_BTC}\n</i>" \
-                               f"💸 Продано {currency.name}: <i>{transaction.sale}\n</i>" \
-                               f"👛 Кошелек <i>{transaction.wallet}</i>"
+                            currency = await CRUDCurrency.get(currency_id=transaction[get_page_id].currency_id)
 
-                        await bot.send_message(chat_id=user.user_id, text=text)
+                            transaction[get_page_id].approved = True
+                            await CRUDTransaction.update(transaction=transaction[get_page_id])
+                            text = f"✅ Вам потвердили сделку № {transaction[get_page_id].id} ✅\n\n" \
+                                   f"📈 Курс покупки: <i>{transaction[get_page_id].exchange_rate}\n</i>" \
+                                   f"   ₿  Куплено BTC: <i>{transaction[get_page_id].buy_BTC}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{transaction[get_page_id].sale}\n</i>" \
+                                   f"👛 Кошелек <i>{transaction[get_page_id].wallet}</i>"
 
-                        await callback.message.delete()
-                        await callback.message.answer(text="Вы успешно потвердили сделку",
-                                                      reply_markup=await AdminForm.users_ikb()
-                                                      )
+                            await bot.send_message(chat_id=user.user_id, text=text)
+
+                            await callback.message.delete()
+                            await callback.message.answer(text="Вы успешно потвердили сделку",
+                                                          reply_markup=await AdminForm.users_ikb()
+                                                          )
+                        except Exception as e:
+                            print(e)
 
                     elif data.get("action") == "get_ContactUser":
                         pass
+
+                    elif data.get("action") == "captcha_confirm":
+                        captcha = await AdminForm.captch()
+                        await callback.message.edit_text(text="Вы уверены, что готовы перевести средства?\n\n"
+                                                              f"Введите результат {captcha[0]} + {captcha[1]}")
+                        await state.update_data(captcha=captcha[2])
+                        await AdminState.CAPTCHA.set()
 
         if message:
             await message.delete()
@@ -540,31 +582,46 @@ class AdminForm:
                 elif await state.get_state() == "AdminState:UsersId":
                     if message.text.isdigit():
                         user = await CRUDUsers.get(user_id=int(message.text))
-                        transaction = await CRUDTransaction.get_all(user_id=user.id)
+                        if user:
+                            transaction = await CRUDTransaction.get_all(user_id=user.id)
 
-                        if transaction:
-                            approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
-                            currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
+                            if transaction:
+                                approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
+                                currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
 
-                            text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
-                                   f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
-                                   f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
-                                   f"💸 Продано {currency.name}: <i>{transaction[0].sale}\n</i>" \
-                                   f"👛 Кошелек <i>{transaction[0].wallet}</i>"
+                                text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
+                                       f"📈 Курс покупки: <i>{transaction[0].exchange_rate}\n</i>" \
+                                       f"   ₿  Куплено BTC: <i>{transaction[0].buy_BTC}\n</i>" \
+                                       f"💸 Продано {currency.name}: <i>{transaction[0].sale}\n</i>" \
+                                       f"👛 Кошелек <i>{transaction[0].wallet}</i>"
 
-                            await message.answer(text="<i>Сделки пользователя</i>\n\n"
-                                                      f"{text}",
-                                                 reply_markup=await AdminForm.pagination_transaction_ikb(
-                                                     target="Users",
-                                                     action="pagination_user_transaction",
-                                                     action_back="get_Users",
-                                                     user_id=user.id),
-                                                 parse_mode="HTML"
-                                                 )
-                            await state.finish()
+                                await message.answer(text="<i>Сделки пользователя</i>\n\n"
+                                                          f"{text}",
+                                                     reply_markup=await AdminForm.pagination_transaction_ikb(
+                                                         target="Users",
+                                                         action="pagination_user_transaction",
+                                                         action_back="get_Users",
+                                                         user_id=user.id),
+                                                     parse_mode="HTML"
+                                                     )
+                                await state.finish()
+                            else:
+                                await message.answer(text="Не найдено")
+                                await state.finish()
                         else:
                             await message.answer(text="Не найдено")
                             await state.finish()
                     else:
                         await message.answer(text="Доступен ввод только цифр")
                         await AdminState.UsersId.set()
+
+                elif await state.get_state() == "AdminState:CAPTCHA":
+                    get_captcha = await state.get_data()
+                    if message.text == str(get_captcha["captcha"]):
+                        await message.answer(text="Yra!")
+                        await state.finish()
+                    else:
+                        captcha = await AdminForm.captch()
+                        await message.answer(text="Неверно!\n\n"
+                                                  f"Введите результат {captcha[0]} + {captcha[1]}")
+                        await AdminState.CAPTCHA.set()
