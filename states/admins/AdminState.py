@@ -7,3 +7,5 @@ class AdminState(StatesGroup):
 
     CheckNumber = State()
     UsersId = State()
+
+    CAPTCHA = State()
