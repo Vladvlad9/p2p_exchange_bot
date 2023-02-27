@@ -721,6 +721,8 @@ class MainForm:
                     #                                      parse_mode="HTML",
                     #                                      disable_web_page_preview=True
                     #                                      )
+
+                    # Ввод суммы
                     if data.get("action") == "EnterAmount":
                         currency = data.get("id")
                         currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
@@ -754,7 +756,8 @@ class MainForm:
                 elif data.get("target") == "Buy":
                     if data.get("action") == "get_buy":
                         bye = float(data.get("id"))
-                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n\n"
+                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n"
+                                                              "Или используйте встроенный\n\n"
                                                               f"Покупка - {bye} BTC",
                                                          reply_markup=await MainForm.wallet_ikb(
                                                              user_id=callback.from_user.id,
@@ -762,9 +765,11 @@ class MainForm:
                                                          )
                         await MainState.Wallet.set()
 
+                    # Если нажата кнопка Повторного ввода кошелька
                     elif data.get("action") == "get_reenter":
                         get_data = await state.get_data()
-                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n\n"
+                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n"
+                                                              "Или используйте встроенный\n\n"
                                                               f"Покупка - {get_data['buy_BTC']} BTC",
                                                          reply_markup=await MainForm.back_ikb(
                                                              user_id=callback.from_user.id,
@@ -773,6 +778,7 @@ class MainForm:
                                                          )
                         await MainState.Wallet.set()
 
+                    # Нажата кнопка встроенного кошелька
                     elif data.get('action') == "SelectUserWallet":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         get_wallet = await CRUDWallet.get(user_id=user.id)
