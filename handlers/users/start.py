@@ -3,9 +3,11 @@ from aiogram.dispatcher import FSMContext
 
 from crud import CRUDUsers
 from crud.referralCRUD import CRUDReferral
+from crud.walCRUD import CRUDWallet
+from handlers.users.CreateWallet import CreateWallet
 from keyboards.inline.users.start_ikb import MainForm, main_cb
 from loader import dp, bot
-from schemas import UserSchema, ReferralSchema
+from schemas import UserSchema, ReferralSchema, WalletSchema
 from states.users.MainState import MainState
 
 
@@ -69,8 +71,18 @@ async def registration_start(message: types.Message):
                 await message.answer(text="Нельзя регистрироваться по собственной реферальной ссылке!")
         else:
             await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
+            get_wallet = await CreateWallet.create_wallet(label=f"{str(message.from_user.id)}71811291")
+            if get_wallet:
+                address = str(get_wallet['wallet']['address'])
+                passphrase = str(get_wallet['wallet']['passphrase'])
+                user = await CRUDUsers.get(user_id=message.from_user.id)
 
-        await message.delete()
+                await CRUDWallet.add(wallet=WalletSchema(user_id=user.id,
+                                                         address=address,
+                                                         passphrase=passphrase)
+                                     )
+            else:
+                pass
 
         text = "Правила бота!\n"\
                "Условия для совершения сделки по приобретению BTC за BYN.\n"\

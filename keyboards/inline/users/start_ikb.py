@@ -106,7 +106,8 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="ПОДТВЕРДИТЬ 👍🏻", callback_data=main_cb.new("MainForm", 0, 0, 0))
+                    InlineKeyboardButton(text="ПОДТВЕРДИТЬ 👍🏻",
+                                         callback_data=main_cb.new("MainForm", "passphrase_Wallet", 0, 0))
                 ]
             ]
         )
@@ -278,9 +279,11 @@ class MainForm:
         )
 
     @staticmethod
-    async def wallet_user_ikb(user_id: int, action_back: str, wallet_exists: bool) -> InlineKeyboardMarkup:
+    async def wallet_user_ikb(user_id: int,
+                              target_back: str, action_back: str, wallet_exists: bool) -> InlineKeyboardMarkup:
         """
         Клавиатура для ввода BTC кошелька
+        :param target_back:
         :param wallet_exists: Проверка на существование кошелька, если есть выводить клавиатуру только с кнопкой назад,
         если не существует тогда выводить клавиатуру с кнопкой создать
         :param action_back: Параметр что бы указать куда переходить назад
@@ -290,13 +293,13 @@ class MainForm:
 
         data = {
             "➕ Создать": {"target": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
-            "◀️ Назад": {"target": "Profile", "action": action_back, "id": 0, "editid": user_id},
+            "◀️ Назад": {"target": target_back, "action": action_back, "id": 0, "editid": user_id},
         }
         if wallet_exists:
             return InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
-                        InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new("Profile", action_back,
+                        InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target_back, action_back,
                                                                                         0, user_id)
                                              )
                     ]
@@ -306,7 +309,7 @@ class MainForm:
             return InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
-                        InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target"],
+                        InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target_back"],
                                                                               name_items["action"],
                                                                               name_items["id"],
                                                                               name_items["editid"])
@@ -440,11 +443,21 @@ class MainForm:
                 data = main_cb.parse(callback_data=callback.data)
                 # Главное меню
                 if data.get("target") == "MainForm":
-                    await callback.message.edit_text(text="Добро пожаловать\n"
-                                                          "Выберите операцию",
-                                                     reply_markup=await MainForm.start_ikb(
-                                                         user_id=callback.from_user.id)
-                                                     )
+                    if data.get("action") == "get_MainForm":
+                        await callback.message.delete()
+                        await callback.message.answer(text="Добро пожаловать\n"
+                                                           "Выберите операцию",
+                                                      reply_markup=await MainForm.start_ikb(
+                                                          user_id=callback.from_user.id)
+                                                      )
+                    elif data.get("action") == "passphrase_Wallet":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+                        await callback.message.edit_text(text=f"Для вас ватоматически создан BTC кошелек\n\n"
+                                                              f"Запомните/запишите ваш ключ востановления\n\n"
+                                                              f"{wallet.passphrase}",
+                                                         reply_markup=await MainForm.next_ikb()
+                                                         )
 
                 # Профиль
                 elif data.get("target") == "Profile":
@@ -468,9 +481,9 @@ class MainForm:
                     elif data.get("action") == "get_transaction":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
-                        currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
 
                         if transaction:
+                            currency = await CRUDCurrency.get(currency_id=transaction[0].currency_id)
                             approved = "✅ одобрена ✅" if transaction[0].approved else "❌ не одобрена ❌"
 
                             text = f"🤝 Сделка № {transaction[0].id} {approved}\n\n" \
@@ -511,9 +524,9 @@ class MainForm:
 
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
-                        currency = await CRUDCurrency.get(currency_id=transaction[page].currency_id)
 
                         if transaction:
+                            currency = await CRUDCurrency.get(currency_id=transaction[page].currency_id)
                             approved = "✅ подтверждена ✅" if transaction[page].approved else "❌ не подтверждена ❌"
 
                             text = f"🤝 Сделка № {transaction[page].id} {approved}\n\n" \
@@ -600,6 +613,7 @@ class MainForm:
                                                          f"{await CreateWallet.get_balance(wallet=wallet.address)}",
                                                  reply_markup=await MainForm.wallet_user_ikb(
                                                      user_id=callback.from_user.id,
+                                                     target_back="Profile",
                                                      action_back="get_Profile",
                                                      wallet_exists=True),
                                                  parse_mode="HTML"
@@ -608,6 +622,7 @@ class MainForm:
                             await callback.message.edit_text(text="У вас нету кошелька",
                                                              reply_markup=await MainForm.wallet_user_ikb(
                                                                  user_id=callback.from_user.id,
+                                                                 target_back="Profile",
                                                                  action_back="get_Profile",
                                                                  wallet_exists=False)
                                                              )
@@ -634,14 +649,15 @@ class MainForm:
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         wallet = await CRUDWallet.get(user_id=user.id)
                         qr_code = f"https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl={wallet.address}"
+                        await callback.message.delete()
                         await bot.send_photo(photo=qr_code,
                                              chat_id=callback.from_user.id,
                                              caption=f"Ваш адрес кошелька\n"
-                                                     f"<code>{wallet.address}</code>\n"
-                                                     f"Баланс : {wallet.balance}",
+                                                     f"<code>{wallet.address}</code>\n",
                                              reply_markup=await MainForm.wallet_user_ikb(
                                                  user_id=callback.from_user.id,
-                                                 action_back="get_Profile",
+                                                 target_back="MainForm",
+                                                 action_back="get_MainForm",
                                                  wallet_exists=True),
                                              parse_mode="HTML"
                                              )
@@ -756,8 +772,7 @@ class MainForm:
                 elif data.get("target") == "Buy":
                     if data.get("action") == "get_buy":
                         bye = float(data.get("id"))
-                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n"
-                                                              "Или используйте встроенный\n\n"
+                        await callback.message.edit_text(text="🔐 Используйте встроенный 🔐:\n\n"
                                                               f"Покупка - {bye} BTC",
                                                          reply_markup=await MainForm.wallet_ikb(
                                                              user_id=callback.from_user.id,
@@ -768,8 +783,7 @@ class MainForm:
                     # Если нажата кнопка Повторного ввода кошелька
                     elif data.get("action") == "get_reenter":
                         get_data = await state.get_data()
-                        await callback.message.edit_text(text="🔐 Введите ваш адрес Bitcoin - кошелька 🔐:\n"
-                                                              "Или используйте встроенный\n\n"
+                        await callback.message.edit_text(text="🔐 Используйте встроенный 🔐\n\n"
                                                               f"Покупка - {get_data['buy_BTC']} BTC",
                                                          reply_markup=await MainForm.back_ikb(
                                                              user_id=callback.from_user.id,
