@@ -9,3 +9,4 @@ class AdminState(StatesGroup):
     UsersId = State()
 
     CAPTCHA = State()
+    CAPTCHA_TWO = State()
