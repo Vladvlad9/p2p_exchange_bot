@@ -28,7 +28,15 @@ class Users:
 
                 transaction.approved = True
                 await CRUDTransaction.update(transaction=transaction)
+
+                admin = message.from_user.username
+                if admin != "":
+                    Username = f"@{admin}"
+                else:
+                    Username = f""
+
                 text = f"✅ Вам потвердили сделку № {transaction.id} ✅\n\n" \
+                       f"Username {Username}\n" \
                        f"📈 Курс покупки: <i>{transaction.exchange_rate}\n</i>" \
                        f"   ₿  Куплено BTC: <i>{transaction.buy_BTC}\n</i>" \
                        f"💸 Продано {currency.name}: <i>{transaction.sale}\n</i>" \
@@ -43,7 +51,15 @@ class Users:
 
                 transaction[get_page_id].approved = True
                 await CRUDTransaction.update(transaction=transaction[get_page_id])
+
+                admin = message.from_user.username
+                if admin != "":
+                    Username = f"@{admin}"
+                else:
+                    Username = f""
+
                 text = f"✅ Вам потвердили сделку № {transaction[get_page_id].id} ✅\n\n" \
+                       f"Username {Username}\n" \
                        f"📈 Курс покупки: <i>{transaction[get_page_id].exchange_rate}\n</i>" \
                        f"   ₿  Куплено BTC: <i>{transaction[get_page_id].buy_BTC}\n</i>" \
                        f"💸 Продано {currency.name}: <i>{transaction[get_page_id].sale}\n</i>" \
@@ -534,7 +550,6 @@ class Users:
 
                     if data.get("action") == "get_Approved":
                         approved_transaction = list(filter(lambda x: x.approved, await CRUDTransaction.get_all()))
-                        burger_menu = "get_check_Approved"
 
                         currency = await CRUDCurrency.get(currency_id=approved_transaction[0].currency_id)
                         if approved_transaction:
@@ -552,7 +567,7 @@ class Users:
                                                              await Users.pagination_transaction_all_users_ikb(
                                                                  target="UsersApproved",
                                                                  action="get_Approved_pagination",
-                                                                 burger_menu=burger_menu,
+                                                                 burger_menu="get_check_Approved",
                                                                  orders=approved_transaction),
                                                              parse_mode="HTML"
                                                              )
@@ -903,8 +918,16 @@ class Users:
                             currency = await CRUDCurrency.get(currency_id=approved_transaction[page].currency_id)
 
                             approved_transaction[page].approved = True
+
                             await CRUDTransaction.update(transaction=approved_transaction[page])
-                            text = f"✅ Вам потвердили сделку № {approved_transaction[page].id} ✅\n\n" \
+                            admin = message.from_user.username
+                            if admin != "":
+                                Username = f"@{admin}"
+                            else:
+                                Username = f""
+
+                            text = f"✅ Вам потвердили сделку № {approved_transaction[page].id}\n\n" \
+                                   f"Username :{Username}\n" \
                                    f"📈 Курс покупки: <i>{approved_transaction[page].exchange_rate}\n</i>" \
                                    f"   ₿  Куплено BTC: <i>{approved_transaction[page].buy_BTC}\n</i>" \
                                    f"💸 Продано {currency.name}: <i>{approved_transaction[page].sale}\n</i>" \
@@ -915,13 +938,13 @@ class Users:
                             await message.answer(text="Вы успешно потвердили сделку")
 
                             await state.finish()
+                        else:
+                            captcha = await Users.captch()
+                            await message.answer(text="Неверно!\n\n"
+                                                      f"Введите результат {captcha[0]} + {captcha[1]}")
+                            await AdminState.CAPTCHA_TWO.set()
                     except Exception as e:
                         print(e)
-                    else:
-                        captcha = await Users.captch()
-                        await message.answer(text="Неверно!\n\n"
-                                                  f"Введите результат {captcha[0]} + {captcha[1]}")
-                        await AdminState.CAPTCHA.set()
 
                 elif await state.get_state() == "AdminState:UsersId":
                     if message.text.isdigit():
