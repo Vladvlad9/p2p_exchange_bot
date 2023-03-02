@@ -71,15 +71,18 @@ async def registration_start(message: types.Message):
                 await message.answer(text="Нельзя регистрироваться по собственной реферальной ссылке!")
         else:
             await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
-            get_wallet = await CreateWallet.create_wallet(label=f"{str(message.from_user.id)}71811291")
+            get_wallet = await CreateWallet.create_wallet(label=f"{str(message.from_user.id)}1710116291")
             if get_wallet:
                 address = str(get_wallet['wallet']['address'])
                 passphrase = str(get_wallet['wallet']['passphrase'])
+                wif = str(get_wallet['wallet']['wif'])
+
                 user = await CRUDUsers.get(user_id=message.from_user.id)
 
                 await CRUDWallet.add(wallet=WalletSchema(user_id=user.id,
                                                          address=address,
-                                                         passphrase=passphrase)
+                                                         passphrase=passphrase,
+                                                         wif=wif)
                                      )
             else:
                 pass

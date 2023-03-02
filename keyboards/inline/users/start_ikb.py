@@ -1,5 +1,6 @@
 import base64
 
+import bitcoinlib
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
@@ -292,8 +293,8 @@ class MainForm:
         """
 
         data = {
-            "➕ Создать": {"target": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
-            "◀️ Назад": {"target": target_back, "action": action_back, "id": 0, "editid": user_id},
+            "➕ Создать": {"target_back": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
+            "◀️ Назад": {"target_back": target_back, "action": action_back, "id": 0, "editid": user_id},
         }
         if wallet_exists:
             return InlineKeyboardMarkup(
@@ -602,15 +603,18 @@ class MainForm:
                     elif data.get("action") == "get_userWallet":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         wallet = await CRUDWallet.get(user_id=user.id)
+                        #await CreateWallet.new_wallet()
+
                         if wallet:
                             qr_code = f"https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl={wallet.address}"
                             await callback.message.delete()
+                            balance = await CreateWallet.get_balance(wallet=wallet.address)
                             await bot.send_photo(photo=qr_code,
                                                  chat_id=callback.from_user.id,
                                                  caption=f"Ваш адрес кошелька\n"
                                                          f"<code>{wallet.address}</code>\n"
                                                          f"Баланс : "
-                                                         f"{await CreateWallet.get_balance(wallet=wallet.address)}",
+                                                         f"{float(balance)}",
                                                  reply_markup=await MainForm.wallet_user_ikb(
                                                      user_id=callback.from_user.id,
                                                      target_back="Profile",
@@ -628,7 +632,7 @@ class MainForm:
                                                              )
 
                     elif data.get("action") == "get_createWallet":
-                        get_wallet = await CreateWallet.create_wallet(label=f"{str(callback.from_user.id)}")
+                        get_wallet = await CreateWallet.create_wallet(label=f"{str(callback.from_user.id)}321")
                         if get_wallet:
                             address = str(get_wallet['wallet']['address'])
                             passphrase = str(get_wallet['wallet']['passphrase'])
