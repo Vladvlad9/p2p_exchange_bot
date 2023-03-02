@@ -15,11 +15,20 @@ from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
 from schemas import TransactionSchema, WalletSchema
 from states.users.MainState import MainState
+from states.users.TransferMoneyState import TransferMoneyState
 
 main_cb = CallbackData("main", "target", "action", "id", "editId")
 
 
 class MainForm:
+
+    @staticmethod
+    async def isfloat(value: str):
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
 
     @staticmethod
     async def buying_currency(money: int, currency: str, limit: int, message, state):
@@ -281,10 +290,10 @@ class MainForm:
 
     @staticmethod
     async def wallet_user_ikb(user_id: int,
-                              target_back: str, action_back: str, wallet_exists: bool) -> InlineKeyboardMarkup:
+                              target: str, action_back: str, wallet_exists: bool) -> InlineKeyboardMarkup:
         """
         Клавиатура для ввода BTC кошелька
-        :param target_back:
+        :param target:
         :param wallet_exists: Проверка на существование кошелька, если есть выводить клавиатуру только с кнопкой назад,
         если не существует тогда выводить клавиатуру с кнопкой создать
         :param action_back: Параметр что бы указать куда переходить назад
@@ -293,14 +302,18 @@ class MainForm:
         """
 
         data = {
-            "➕ Создать": {"target_back": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
-            "◀️ Назад": {"target_back": target_back, "action": action_back, "id": 0, "editid": user_id},
+            "➕ Создать": {"target": "Profile", "action": "get_createWallet", "id": 0, "editid": user_id},
+            "◀️ Назад": {"target": target, "action": action_back, "id": 0, "editid": user_id},
         }
+
         if wallet_exists:
             return InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
-                        InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target_back, action_back,
+                        InlineKeyboardButton(text="📤 Вывести деньги",
+                                             callback_data=main_cb.new("Profile", "money_transfer", 0, user_id)
+                                             ),
+                        InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action_back,
                                                                                         0, user_id)
                                              )
                     ]
@@ -360,7 +373,7 @@ class MainForm:
         data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
                 "👨‍👦‍👦 Рефералы": {"target": "Profile", "action": "get_referrals", "id": 0, "editid": user_id},
                 "👛 Кошелек": {"target": "Profile", "action": "get_userWallet", "id": 0, "editid": user_id},
-                "◀️ Назад": {"target": target, "action": "", "id": 0, "editid": user_id}
+                "◀️ Назад": {"target": target, "action": "get_MainForm", "id": 0, "editid": user_id}
                 }
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -434,6 +447,19 @@ class MainForm:
                     ]
                 ]
             )
+
+    @staticmethod
+    async def money_transfer_ikb(user_id: int) -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Отпраить",
+                                         callback_data=main_cb.new("Profile", "approved_trans_money", user_id, 0)),
+                    InlineKeyboardButton(text="◀️ Назад",
+                                         callback_data=main_cb.new("Profile", "get_userWallet", user_id, 0))
+                ]
+            ]
+        )
 
     @staticmethod
     async def process_profile(callback: CallbackQuery = None, message: Message = None,
@@ -601,6 +627,7 @@ class MainForm:
                                                          )
 
                     elif data.get("action") == "get_userWallet":
+                        await state.finish()
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         wallet = await CRUDWallet.get(user_id=user.id)
                         #await CreateWallet.new_wallet()
@@ -614,10 +641,10 @@ class MainForm:
                                                  caption=f"Ваш адрес кошелька\n"
                                                          f"<code>{wallet.address}</code>\n"
                                                          f"Баланс : "
-                                                         f"{float(balance)}",
+                                                         f"{float(balance)} BTC",
                                                  reply_markup=await MainForm.wallet_user_ikb(
                                                      user_id=callback.from_user.id,
-                                                     target_back="Profile",
+                                                     target="Profile",
                                                      action_back="get_Profile",
                                                      wallet_exists=True),
                                                  parse_mode="HTML"
@@ -626,7 +653,7 @@ class MainForm:
                             await callback.message.edit_text(text="У вас нету кошелька",
                                                              reply_markup=await MainForm.wallet_user_ikb(
                                                                  user_id=callback.from_user.id,
-                                                                 target_back="Profile",
+                                                                 target="Profile",
                                                                  action_back="get_Profile",
                                                                  wallet_exists=False)
                                                              )
@@ -660,11 +687,26 @@ class MainForm:
                                                      f"<code>{wallet.address}</code>\n",
                                              reply_markup=await MainForm.wallet_user_ikb(
                                                  user_id=callback.from_user.id,
-                                                 target_back="MainForm",
+                                                 target="MainForm",
                                                  action_back="get_MainForm",
                                                  wallet_exists=True),
                                              parse_mode="HTML"
                                              )
+
+                    elif data.get('action') == "money_transfer":
+                        await callback.message.delete()
+                        await callback.message.answer(text="Введите адрес кошелька на который хотите переести BTC",
+                                                      reply_markup=await MainForm.back_ikb(
+                                                          user_id=callback.from_user.id,
+                                                          target="Profile",
+                                                          action="get_userWallet",
+                                                          page=0)
+                                                      )
+
+                        await MainState.WalletRecipient.set()
+
+                    elif data.get('action') == "approved_trans_money":
+                        pass
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
@@ -960,3 +1002,74 @@ class MainForm:
                         await message.answer(text="Вы ввели некорректные данные\n"
                                                   "Доступен ввод только цифр")
                         await MainState.UserCoin.set()
+
+                # Ввод пользователем кошелька BTC для вывода денег
+                elif await state.get_state() == "MainState:WalletRecipient":
+                    wallet = await Cryptocurrency.Check_Wallet(btc_address=message.text)
+                    if wallet:
+                        user = await CRUDUsers.get(user_id=message.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+                        balance = await CreateWallet.get_balance(wallet=wallet.address)
+
+                        await state.update_data(wallet_recipient=message.text)  # запоминаем кошелек
+                        await message.answer(text=f"Кошелек отправителя </i>{message.text}<i>\n\n"
+                                                  f"Ваш баланс {balance}\n"
+                                                  f"Введите количество BTC которое хотите отправить",
+                                             parse_mode="HTML",
+                                             reply_markup=await MainForm.back_ikb(
+                                                 user_id=message.from_user.id,
+                                                 target="Profile",
+                                                 action="get_userWallet",
+                                                 page=0)
+                                             )
+                        await MainState.Money.set()
+                    else:
+                        await message.answer(text=f"Адрес кошелька <i>{message.text}</i> нету в blockchain\n\n"
+                                                  f"Введите еще раз адрес Bitcoin кошелька получателя",
+                                             reply_markup=await MainForm.back_ikb(
+                                                 user_id=message.from_user.id,
+                                                 target="Profile",
+                                                 action="get_userWallet",
+                                                 page=0),
+                                             parse_mode="HTML"
+                                             )
+                        await MainState.WalletRecipient.set()
+
+                # Ввод пользователем кошелька BTC для вывода денег
+                elif await state.get_state() == "MainState:WalletRecipient":
+                    user = await CRUDUsers.get(user_id=message.from_user.id)
+                    wallet = await CRUDWallet.get(user_id=user.id)
+                    balance = await CreateWallet.get_balance(wallet=wallet.address)
+
+                    get_money = await MainForm.isfloat(message.text)
+                    if get_money:
+                        if float(message.text) < balance:
+                            data = await state.get_data()
+                            await state.update_data(wallet_recipient=message.text)  # запоминаем ввуденую сумму BTC
+                            await message.answer(text=f"Потвердите операцию\n\n"
+                                                      f"Адрес кошелька получателя <i>{data['wallet_recipient']}</i>\n"
+                                                      f"Отпраить BTC {float(message.text)}",
+                                                 parse_mode="HTML",
+                                                 reply_markup=await MainForm.money_transfer_ikb(
+                                                     user_id=message.from_user.id)
+                                                 )
+                        else:
+                            await message.answer(text=f"Недостаточно средств\n"
+                                                      f"У вас на балансе доступно {balance} BTC\n\n"
+                                                      f"Введите сумму занова",
+                                                 reply_markup=await MainForm.back_ikb(
+                                                     user_id=message.from_user.id,
+                                                     target="Profile",
+                                                     action="get_userWallet",
+                                                     page=0)
+                                                 )
+                            await MainState.Money.set()
+                    else:
+                        await message.answer(text="Введите число!",
+                                             reply_markup=await MainForm.back_ikb(
+                                                 user_id=message.from_user.id,
+                                                 target="Profile",
+                                                 action="get_userWallet",
+                                                 page=0)
+                                             )
+                        await MainState.Money.set()

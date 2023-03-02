@@ -1,10 +1,8 @@
 import requests
-import pandas
-from requests import HTTPError
 
 from config import CONFIG
-from bit import PrivateKeyTestnet
-
+from fake_useragent import UserAgent
+import urllib
 
 class Cryptocurrency:
 
@@ -32,17 +30,18 @@ class Cryptocurrency:
 
     @staticmethod
     async def Check_Wallet(btc_address: str) -> bool:
+        ua = UserAgent()
         headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:94.0) Gecko/20100101 Firefox/94.0'
         }
-
+        # http://45.155.203.112:8000
         proxies = {
-            'http': 'http://45.155.203.112:8000'
+            'http': 'http://198.59.191.234:8080'
         }
 
         try:
             url = f'https://blockchain.info/q/addressbalance/{btc_address}'
-            #get_url = requests.get(url)
+
             get_url = requests.get(url=url, headers=headers, proxies=proxies)
             if get_url.status_code == 200:
                 return True
