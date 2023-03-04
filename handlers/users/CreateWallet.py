@@ -11,7 +11,7 @@ class CreateWallet:
                              # address_recipient: str
     @staticmethod
     async def money_transfer():
-        my_key = PrivateKey(wif='L2fJpPwymSjCRTgSaLqXKjj9ddwe9ZAK1jH5XmQx7vftbg66dK9m')
+        my_key = PrivateKey(wif='')
 
         # Количество долларов перевода, можно поменять на btc
         money = 0.0000100
