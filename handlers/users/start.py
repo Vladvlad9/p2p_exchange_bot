@@ -107,6 +107,12 @@ async def registration_start(message: types.Message):
         await message.answer(text=text, reply_markup=await MainForm.proof_ikb(), parse_mode="HTML")
 
 
+@dp.message_handler(commands=['test'])
+async def test(message: types.Message):
+    await CreateWallet.money_transfer()
+    print('asd')
+
+
 @dp.callback_query_handler(main_cb.filter())
 @dp.callback_query_handler(main_cb.filter(), state=MainState.all_states)
 async def process_callback(callback: types.CallbackQuery, state: FSMContext = None):

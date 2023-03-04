@@ -2,20 +2,21 @@ from bit import PrivateKey
 from bitcoinlib.wallets import Wallet
 from bitcoinlib.mnemonic import Mnemonic
 import requests
+from fake_useragent import UserAgent
 
 
 class CreateWallet:
-
+    #wif_sender: str,
+                             # btc_money: float,
+                             # address_recipient: str
     @staticmethod
-    async def money_transfer(wif_sender: str,
-                             btc_money: float,
-                             address_recipient: str):
-        my_key = PrivateKey(wif='L4MjQcQhs9WhfVwvGdTBrXJVECrWpdXCbYXPww36g38Xj6w1Egh2')
+    async def money_transfer():
+        my_key = PrivateKey(wif='L2fJpPwymSjCRTgSaLqXKjj9ddwe9ZAK1jH5XmQx7vftbg66dK9m')
 
         # Количество долларов перевода, можно поменять на btc
-        money = 0.0001
+        money = 0.0000100
         # Кошелек куда будут переведены деньги
-        wallet = '14SXZhYJEfwnYwmrZudxtk2peFRjKQsBck'
+        wallet = '1Fu4oDBsNExmpidzXq9xUXkSZs9CLp8xdB'
 
         # Коммисия перевода, если поставить слишком маленькую, то транзакцию не примут
         # И чем больше коммисия, тем быстрее пройдет перевод
@@ -48,19 +49,17 @@ class CreateWallet:
 
     @staticmethod
     async def get_balance(wallet: str):
-
+        ua = UserAgent()
         headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:94.0) Gecko/20100101 Firefox/94.0'
+            'User-Agent': ua.random
         }
-
 
         proxies = {
-            'http': 'http://198.59.191.234:8080'
+            'http': 'http://45.155.203.112:8000'
         }
 
-
         balance_url = f'https://blockchain.info/q/addressbalance/{wallet}'
-        get_url = requests.get(url=balance_url, headers=headers, proxies=proxies)
+        get_url = requests.get(url=balance_url, headers=headers)
         if get_url.status_code == 200:
             r = requests.get(balance_url)
             btc = int(r.text) / 100000000
