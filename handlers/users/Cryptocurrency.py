@@ -4,6 +4,7 @@ from config import CONFIG
 from fake_useragent import UserAgent
 import urllib
 
+
 class Cryptocurrency:
 
     @staticmethod

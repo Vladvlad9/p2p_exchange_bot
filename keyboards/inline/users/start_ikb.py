@@ -117,7 +117,7 @@ class MainForm:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(text="ПОДТВЕРДИТЬ 👍🏻",
-                                         callback_data=main_cb.new("MainForm", "passphrase_Wallet", 0, 0))
+                                         callback_data=main_cb.new("Profile", "get_NextWallet", 0, 0))
                 ]
             ]
         )
@@ -659,7 +659,7 @@ class MainForm:
                                                              )
 
                     elif data.get("action") == "get_createWallet":
-                        get_wallet = await CreateWallet.create_wallet(label=f"{str(callback.from_user.id)}321")
+                        get_wallet = await CreateWallet.create_wallet()
                         if get_wallet:
                             address = str(get_wallet['wallet']['address'])
                             passphrase = str(get_wallet['wallet']['passphrase'])
@@ -706,7 +706,16 @@ class MainForm:
                         await MainState.WalletRecipient.set()
 
                     elif data.get('action') == "approved_trans_money":
-                        pass
+                        data = await state.get_data()
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+
+                        transfer = await CreateWallet.money_transfer(wif_sender=wallet.wif,
+                                                                     address_recipient=data["address_recipient"],
+                                                                     btc_money=float(data["btc_money"]))
+                        await callback.message.edit_text(text="Транзакция успешно проведена\n\n"
+                                                              f"{transfer}")
+                        await state.finish()
 
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
@@ -1011,8 +1020,8 @@ class MainForm:
                         wallet = await CRUDWallet.get(user_id=user.id)
                         balance = await CreateWallet.get_balance(wallet=wallet.address)
 
-                        await state.update_data(wallet_recipient=message.text)  # запоминаем кошелек
-                        await message.answer(text=f"Кошелек отправителя </i>{message.text}<i>\n\n"
+                        await state.update_data(address_recipient=message.text)  # запоминаем кошелек
+                        await message.answer(text=f"Кошелек отправителя <i>{message.text}</i>\n\n"
                                                   f"Ваш баланс {balance}\n"
                                                   f"Введите количество BTC которое хотите отправить",
                                              parse_mode="HTML",
@@ -1036,7 +1045,7 @@ class MainForm:
                         await MainState.WalletRecipient.set()
 
                 # Ввод пользователем кошелька BTC для вывода денег
-                elif await state.get_state() == "MainState:WalletRecipient":
+                elif await state.get_state() == "MainState:Money":
                     user = await CRUDUsers.get(user_id=message.from_user.id)
                     wallet = await CRUDWallet.get(user_id=user.id)
                     balance = await CreateWallet.get_balance(wallet=wallet.address)
@@ -1045,9 +1054,9 @@ class MainForm:
                     if get_money:
                         if float(message.text) < balance:
                             data = await state.get_data()
-                            await state.update_data(wallet_recipient=message.text)  # запоминаем ввуденую сумму BTC
+                            await state.update_data(btc_money=message.text)  # запоминаем ввуденую сумму BTC
                             await message.answer(text=f"Потвердите операцию\n\n"
-                                                      f"Адрес кошелька получателя <i>{data['wallet_recipient']}</i>\n"
+                                                      f"Адрес кошелька получателя <i>{data['address_recipient']}</i>\n"
                                                       f"Отпраить BTC {float(message.text)}",
                                                  parse_mode="HTML",
                                                  reply_markup=await MainForm.money_transfer_ikb(
