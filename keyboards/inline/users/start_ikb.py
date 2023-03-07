@@ -167,7 +167,7 @@ class MainForm:
         )
 
     @staticmethod
-    async def money_ikb(user_id: int, target: str) -> InlineKeyboardMarkup:
+    async def get_currency_ikb(user_id: int, target: str) -> InlineKeyboardMarkup:
         """
         Клавиатура при покупке валюты
         :param user_id: id пользователя
@@ -191,7 +191,7 @@ class MainForm:
         )
 
     @staticmethod
-    async def currency_ikb(user_id: int, target: str) -> InlineKeyboardMarkup:
+    async def currency_ikb(user_id: int, target: str, action: str) -> InlineKeyboardMarkup:
         """
                 Клавиатура при покупке валюты
                 :param user_id: id пользователя
@@ -199,8 +199,8 @@ class MainForm:
                 :return:
                 """
         data = {
-            "BYN 🇧🇾": {"target": "Pay", "action": "get_BUN", "id": "BYN", "editid": user_id},
-            "RUB 🇷🇺": {"target": "Pay", "action": "get_RUB", "id": "RUB", "editid": user_id},
+            "BYN 🇧🇾": {"target": "Pay", "action": "get_Currency", "id": "BYN", "editid": user_id},
+            "RUB 🇷🇺": {"target": "Pay", "action": "get_Currency", "id": "RUB", "editid": user_id},
         }
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -212,7 +212,7 @@ class MainForm:
                     for name, name_items in data.items()
                 ],
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action, 0, user_id))
                 ]
             ]
         )
@@ -339,7 +339,7 @@ class MainForm:
         data = {
             "BYN 🇧🇾": {"target": "Pay", "action": "EnterAmount", "id": "BYN", "editid": user_id},
             "RUB 🇷🇺": {"target": "Pay", "action": "EnterAmount", "id": "RUB", "editid": user_id},
-            "BTC ₿": {"target": "SellBTC", "action": "get_SellBTC", "id": 0, "editid": user_id},
+            "BTC ₿": {"target": "Pay", "action": "get_SellBTC", "id": 0, "editid": user_id},
         }
 
         return InlineKeyboardMarkup(
@@ -717,12 +717,13 @@ class MainForm:
                     await callback.message.edit_text(text=text,
                                                      reply_markup=await MainForm.currency_ikb(
                                                          user_id=callback.from_user.id,
-                                                         target="MainForm"),
+                                                         target="MainForm",
+                                                         action="get_MainForm"),
                                                      parse_mode="HTML",
                                                      disable_web_page_preview=True
                                                      )
 
-                # Меню покупки BTC
+                # Меню покупки Валюты
                 elif data.get("target") == "Pay":
                     # if data.get("action") == "get_pay":
                     #     price_BYN = int(data.get("id"))
@@ -783,7 +784,47 @@ class MainForm:
                     #                                      )
 
                     # Ввод суммы
+                    # Покупка BYN or RUB за BTC
                     if data.get("action") == "EnterAmount":
+                        currency = data.get("id")
+                        currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
+
+                        if currency == "BYN":
+                            price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
+                            text = "Купить BTC за BYN\n" \
+                                   f"1 Bitcoin ₿ = {price} BYN 🇧🇾 " \
+                                   f"<a href='https://www.coinbase.com/ru/converter/btc/byn'>Coinbase</a>\n\n" \
+                                   f"<i>Мин. сумма 50 BYN</i>"
+                        else:
+                            price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
+
+                            text = "Купить BTC за RUB\n" \
+                                   f"1 Bitcoin ₿ = {price} RUB 🇷🇺 " \
+                                   f"<a href='https://www.coinbase.com/ru/converter/btc/rub'>Coinbase</a>\n\n" \
+                                   f"<i>Мин. сумма 1000 RUB</i>"
+
+                        await state.update_data(currency=currency)
+                        await callback.message.edit_text(text=f"{text}\n\n"
+                                                              f"Введите сумму в {currency_txt}:",
+                                                         reply_markup=await MainForm.back_ikb(
+                                                             action="",
+                                                             user_id=callback.from_user.id,
+                                                             target="BuyBTC"),
+                                                         disable_web_page_preview=True
+                                                         )
+                        await MainState.UserCoin.set()
+
+                    # Выбор валюты для покукик BTC
+                    elif data.get('action') == 'get_SellBTC':
+                        await callback.message.edit_text(text="Выберите способ оплаты",
+                                                         reply_markup=await MainForm.currency_ikb(
+                                                             user_id=callback.from_user.id,
+                                                             target="MainForm",
+                                                             action="get_MainForm")
+                                                         )
+
+                    # Покупка BTC за BYN or RUB
+                    elif data.get('action') == "get_Currency":
                         currency = data.get("id")
                         currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
 
