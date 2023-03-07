@@ -11,4 +11,5 @@ class AdminState(StatesGroup):
     CAPTCHA = State()
     CAPTCHA_TWO = State()
 
-    Newsletter = State()
+    NewsletterText = State()
+    NewsletterPhoto = State()

@@ -188,14 +188,6 @@ class Users:
                 "id": "No",
                 "editid": 0
             },
-
-            "◀️ Назад": {
-                "target": "MainMenu",
-                "action": "",
-                "pagination": "",
-                "id": 0,
-                "editid": 0
-            },
         }
 
         return InlineKeyboardMarkup(
@@ -207,6 +199,11 @@ class Users:
                                                                               name_items["id"],
                                                                               name_items["editid"]))
                 ] for name, name_items in data.items()
+
+            ] + [
+                [
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=user_cb.new("MainMenu", "", 0,0, 0))
+                ]
             ]
         )
 
@@ -410,7 +407,7 @@ class Users:
 
                     # Поиск по номеру чека
                     elif data.get("action") == "get_CheckNumber":
-                        await callback.message.edit_text(text="Введите номер чек",
+                        await callback.message.edit_text(text="Введите номер чека",
                                                          reply_markup=await Users.back_ikb(target="Users",
                                                                                            action="get_Users")
                                                          )
@@ -549,32 +546,42 @@ class Users:
                 elif data.get("target") == "UsersApproved":
 
                     if data.get("action") == "get_Approved":
-                        approved_transaction = list(filter(lambda x: x.approved, await CRUDTransaction.get_all()))
+                        try:
+                            approved_transaction = list(filter(lambda x: x.approved, await CRUDTransaction.get_all()))
 
-                        currency = await CRUDCurrency.get(currency_id=approved_transaction[0].currency_id)
-                        if approved_transaction:
-                            approved = "✅ одобрена ✅" if approved_transaction[0].approved else "❌ не одобрена ❌"
+                            if approved_transaction:
+                                currency = await CRUDCurrency.get(currency_id=approved_transaction[0].currency_id)
+                                approved = "✅ одобрена ✅" if approved_transaction[0].approved else "❌ не одобрена ❌"
 
-                            text = f"🤝 Сделка № {approved_transaction[0].id} {approved}\n\n" \
-                                   f"📈 Курс покупки: <i>{approved_transaction[0].exchange_rate}\n</i>" \
-                                   f"   ₿  Куплено BTC: <i>{approved_transaction[0].buy_BTC}\n</i>" \
-                                   f"💸 Продано {currency.name}: <i>{approved_transaction[0].sale}\n</i>" \
-                                   f"👛 Кошелек <i>{approved_transaction[0].wallet}</i>"
+                                text = f"🤝 Сделка № {approved_transaction[0].id} {approved}\n\n" \
+                                       f"📈 Курс покупки: <i>{approved_transaction[0].exchange_rate}\n</i>" \
+                                       f"   ₿  Куплено BTC: <i>{approved_transaction[0].buy_BTC}\n</i>" \
+                                       f"💸 Продано {currency.name}: <i>{approved_transaction[0].sale}\n</i>" \
+                                       f"👛 Кошелек <i>{approved_transaction[0].wallet}</i>"
 
-                            await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
-                                                                  f"{text}",
-                                                             reply_markup=
-                                                             await Users.pagination_transaction_all_users_ikb(
-                                                                 target="UsersApproved",
-                                                                 action="get_Approved_pagination",
-                                                                 burger_menu="get_check_Approved",
-                                                                 orders=approved_transaction),
-                                                             parse_mode="HTML"
+                                await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=
+                                                                 await Users.pagination_transaction_all_users_ikb(
+                                                                     target="UsersApproved",
+                                                                     action="get_Approved_pagination",
+                                                                     burger_menu="get_check_Approved",
+                                                                     orders=approved_transaction),
+                                                                 parse_mode="HTML"
+                                                                 )
+                                await state.finish()
+                            else:
+                                await callback.message.edit_text(text="Пользователей не найдено",
+                                                                 reply_markup=await Users.users_ikb()
+                                                                 )
+                                await state.finish()
+                        except Exception as e:
+                            print(e)
+                            await callback.message.edit_text(text="НУ я же сказал, что нету пользователей!",
+                                                             reply_markup=await Users.users_ikb()
                                                              )
                             await state.finish()
-                        else:
-                            await callback.message.answer(text="Не найдено")
-                            await state.finish()
+
 
                     # Пагинация
                     elif data.get("action") == "get_Approved_pagination":
@@ -678,31 +685,41 @@ class Users:
                 elif data.get("target") == "UsersNoApproved":
 
                     if data.get("action") == "get_NoApproved":
-                        approved_transaction = list(filter(lambda x: x.approved == False, await CRUDTransaction.get_all()))
+                        try:
+                            approved_transaction = list(
+                                filter(lambda x: x.approved == False, await CRUDTransaction.get_all()))
 
-                        currency = await CRUDCurrency.get(currency_id=approved_transaction[0].currency_id)
-                        if approved_transaction:
-                            approved = "✅ одобрена ✅" if approved_transaction[0].approved else "❌ не одобрена ❌"
+                            if approved_transaction:
+                                currency = await CRUDCurrency.get(currency_id=approved_transaction[0].currency_id)
+                                approved = "✅ одобрена ✅" if approved_transaction[0].approved else "❌ не одобрена ❌"
 
-                            text = f"🤝 Сделка № {approved_transaction[0].id} {approved}\n\n" \
-                                   f"📈 Курс покупки: <i>{approved_transaction[0].exchange_rate}\n</i>" \
-                                   f"   ₿  Куплено BTC: <i>{approved_transaction[0].buy_BTC}\n</i>" \
-                                   f"💸 Продано {currency.name}: <i>{approved_transaction[0].sale}\n</i>" \
-                                   f"👛 Кошелек <i>{approved_transaction[0].wallet}</i>"
+                                text = f"🤝 Сделка № {approved_transaction[0].id} {approved}\n\n" \
+                                       f"📈 Курс покупки: <i>{approved_transaction[0].exchange_rate}\n</i>" \
+                                       f"   ₿  Куплено BTC: <i>{approved_transaction[0].buy_BTC}\n</i>" \
+                                       f"💸 Продано {currency.name}: <i>{approved_transaction[0].sale}\n</i>" \
+                                       f"👛 Кошелек <i>{approved_transaction[0].wallet}</i>"
 
-                            await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
-                                                                  f"{text}",
-                                                             reply_markup=
-                                                             await Users.pagination_transaction_all_users_ikb(
-                                                                 target="UsersNoApproved",
-                                                                 action="get_NoApproved_pagination",
-                                                                 burger_menu="check_NoApproved",
-                                                                 orders=approved_transaction),
-                                                             parse_mode="HTML"
+                                await callback.message.edit_text(text="<i>Сделки пользователя</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=
+                                                                 await Users.pagination_transaction_all_users_ikb(
+                                                                     target="UsersNoApproved",
+                                                                     action="get_NoApproved_pagination",
+                                                                     burger_menu="check_NoApproved",
+                                                                     orders=approved_transaction),
+                                                                 parse_mode="HTML"
+                                                                 )
+                                await state.finish()
+                            else:
+                                await callback.message.edit_text(text="Пользователей не найдено",
+                                                                 reply_markup=await Users.users_ikb()
+                                                                 )
+                                await state.finish()
+                        except Exception as e:
+                            print(e)
+                            await callback.message.edit_text(text="НУ я же сказал, что нету пользователей!",
+                                                             reply_markup=await Users.users_ikb()
                                                              )
-                            await state.finish()
-                        else:
-                            await callback.message.answer(text="Не найдено")
                             await state.finish()
 
                     # Бургер меню
