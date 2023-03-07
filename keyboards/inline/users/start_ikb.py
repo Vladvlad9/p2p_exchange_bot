@@ -1,6 +1,5 @@
 import base64
 
-import bitcoinlib
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
