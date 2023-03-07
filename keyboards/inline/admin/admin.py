@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
+from crud import CRUDUsers
 from handlers.users.AllCallbacks import admin_cb
 from loader import bot
 from states.admins.AdminState import AdminState
@@ -138,6 +139,10 @@ class AdminForm:
                     if data.get("action") == "get_Newsletter":
                         pass
 
+                elif data.get("target") == "Newsletter":
+                    await callback.message.edit_text(text="Введите текст")
+                    await AdminState.Newsletter.set()
+
         if message:
             await message.delete()
 
@@ -169,4 +174,17 @@ class AdminForm:
                     else:
                         await message.answer(text="Доступен ввод только цифр")
                         await AdminState.REQUISITES.set()
+
+                elif await state.get_state() == "AdminState:Newsletter":
+                    try:
+                        users = await CRUDUsers.get_all()
+                        for user in users:
+                            await bot.send_message(text=message.text,
+                                                   chat_id=user.user_id,
+                                                   parse_mode="HTML")
+
+                    except Exception as e:
+                        print(e)
+
+                    await state.finish()
 
