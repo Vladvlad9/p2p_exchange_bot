@@ -1,5 +1,3 @@
-import base64
-
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
@@ -476,14 +474,6 @@ class MainForm:
                                                       reply_markup=await MainForm.start_ikb(
                                                           user_id=callback.from_user.id)
                                                       )
-                    elif data.get("action") == "passphrase_Wallet":
-                        user = await CRUDUsers.get(user_id=callback.from_user.id)
-                        wallet = await CRUDWallet.get(user_id=user.id)
-                        await callback.message.edit_text(text=f"Для вас ватоматически создан BTC кошелек\n\n"
-                                                              f"Запомните/запишите ваш ключ востановления\n\n"
-                                                              f"{wallet.passphrase}",
-                                                         reply_markup=await MainForm.next_ikb()
-                                                         )
 
                 # Профиль
                 elif data.get("target") == "Profile":
