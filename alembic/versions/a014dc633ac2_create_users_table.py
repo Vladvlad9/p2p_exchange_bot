@@ -24,6 +24,12 @@ def upgrade() -> None:
                     sa.PrimaryKeyConstraint('id')
                     )
 
+    op.create_table('currency',
+                    sa.Column('id', sa.BigInteger(), nullable=False),
+                    sa.Column('name', sa.Text(), nullable=False),
+                    sa.PrimaryKeyConstraint('id')
+                    )
+
     op.create_table('transactions',
                     sa.Column('id', sa.BigInteger(), nullable=False),
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
@@ -45,12 +51,6 @@ def upgrade() -> None:
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
                     sa.Column('referral', sa.BigInteger(), nullable=True),
                     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-                    sa.PrimaryKeyConstraint('id')
-                    )
-
-    op.create_table('currency',
-                    sa.Column('id', sa.BigInteger(), nullable=False),
-                    sa.Column('name', sa.Text(), nullable=False),
                     sa.PrimaryKeyConstraint('id')
                     )
 
