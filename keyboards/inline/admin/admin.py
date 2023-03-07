@@ -140,7 +140,18 @@ class AdminForm:
                         pass
 
                 elif data.get("target") == "Newsletter":
-                    await callback.message.edit_text(text="Введите текст")
+                    text = "Вы можете выделять текст жирным шрифтом или курсивом, добавлять стиль кода или " \
+                           "гиперссылки для лучшей визуализации важной информации.\n\n" \
+                           "Список поддерживаемых тегов:\n" \
+                           "b<b> текст </b>/b - Выделяет текст жирным шрифтом\n" \
+                           "i<i> текст </i>/i - Выделяет текст курсивом\n" \
+                           "u<u> текст </u>/u - Выделяет текст подчеркиванием\n" \
+                           "s<s> текст </s>/s - Добавляет зачеркивание текста\n" \
+                           "tg-spoiler<tg-spoiler> текст </tg-spoiler>/tg-spoiler - Добавляет защиту от спойлера, " \
+                           "которая скрывает выделенный текст\n" \
+                           "<a href='http://www.tg.com/'>текст</a> - Создает гиперссылку на выделенный текст"
+                    await callback.message.edit_text(text=f"{text}\n\n"
+                                                          f"Введите текст")
                     await AdminState.Newsletter.set()
 
         if message:
