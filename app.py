@@ -1,10 +1,7 @@
-import asyncio
-from datetime import datetime
+import logging
 
-from aiogram.utils.exceptions import ChatNotFound
-
-from loader import bot
 from utils.set_bot_commands import set_default_commands
+logging.basicConfig(level=logging.INFO)
 
 
 async def on_startup(_):

@@ -65,6 +65,7 @@ class MainForm:
             await state.update_data(sale=user_money)
             await state.update_data(exchange_rate=price_BTC)
             await state.update_data(buy_BTC=bye)
+            percent: float = round((bye / 100) * CONFIG.COMMISSION.COMMISSION_BOT, 8)
 
             text = f"💳 Купить криптовалюту: BTC за {currency.name}\n" \
                    f"1 Bitcoin = {price_BTC} {currency.name}\n\n" \
@@ -72,6 +73,7 @@ class MainForm:
                    f"Текущая цена покупки зафиксирована!\n" \
                    f"Нажав кнопку Купить ✅ " \
                    f"необходимо оплатить счет в течении ⏱{CONFIG.PAYMENT_TIMER} минут!\n\n" \
+                   f"{CONFIG.COMMISSION.COMMISSION_BOT}% от {bye} составит = {percent} BTC\n" \
                    f"{user_money} {currency.name} = {bye} BTC"
 
             await message.answer(text=text,
@@ -739,65 +741,6 @@ class MainForm:
 
                 # Меню покупки Валюты
                 elif data.get("target") == "Pay":
-                    # if data.get("action") == "get_pay":
-                    #     price_BYN = int(data.get("id"))
-                    #     price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
-                    #     bye = round(price_BYN / price_BTC, 8)
-                    #
-                    #     await state.update_data(sale_BYN=price_BYN)
-                    #     await state.update_data(exchange_rate=price_BTC)
-                    #     await state.update_data(buy_BTC=bye)
-                    #
-                    #     text = "💳 Купить криптовалюту: BTC за BYN\n" \
-                    #            f"1 Bitcoin = {price_BTC}\n\n" \
-                    #            f"📢 Внимание!\n" \
-                    #            f"Текущая цена покупки зафиксирована!\n" \
-                    #            f"Нажав кнопку Купить ✅ " \
-                    #            f"необходимо оплатить счет в течении ⏱60 минут!\n\n" \
-                    #            f"{price_BYN} BYN = {bye} BTC"
-                    #
-                    #     await callback.message.edit_text(text=text,
-                    #                                      reply_markup=await MainForm.bue_ikb(
-                    #                                          user_id=callback.from_user.id,
-                    #                                          count=bye,
-                    #                                          target="BuyBTC")
-                    #                                      )
-                    #
-                    # elif data.get('action') == "get_BUN":
-                    #     price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
-                    #
-                    #     text = "Купить BTC за BYN\n" \
-                    #            f"1 Bitcoin ₿ = {price} BYN 🇧🇾 " \
-                    #            f"<a href='https://www.coinbase.com/ru/converter/btc/byn'>Coinbase</a>\n\n" \
-                    #            f"<i>Мин. сумма 50 BYN</i>"
-                    #
-                    #     await callback.message.edit_text(text=text,
-                    #                                      reply_markup=await MainForm.money_entry_ikb(
-                    #                                          user_id=callback.from_user.id,
-                    #                                          target="MainForm",
-                    #                                          currency="BYN"),
-                    #                                      parse_mode="HTML",
-                    #                                      disable_web_page_preview=True
-                    #                                      )
-                    #
-                    # elif data.get('action') == "get_RUB":
-                    #     price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
-                    #
-                    #     text = "Купить BTC за RUB\n" \
-                    #            f"1 Bitcoin ₿ = {price} RUB 🇷🇺 " \
-                    #            f"<a href='https://www.coinbase.com/ru/converter/btc/rub'>Coinbase</a>\n\n" \
-                    #            f"<i>Мин. сумма 1000 RUB</i>"
-                    #
-                    #     await callback.message.edit_text(text=text,
-                    #                                      reply_markup=await MainForm.money_entry_ikb(
-                    #                                          user_id=callback.from_user.id,
-                    #                                          target="MainForm",
-                    #                                          currency="RUB"),
-                    #                                      parse_mode="HTML",
-                    #                                      disable_web_page_preview=True
-                    #                                      )
-
-                    # Ввод суммы
                     # Покупка BYN or RUB за BTC
                     if data.get("action") == "EnterAmount":
                         currency = data.get("id")
