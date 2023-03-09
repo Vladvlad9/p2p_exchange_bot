@@ -1,7 +1,11 @@
+import asyncio
+
+from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
+from aiogram.utils import exceptions
 
 from config import CONFIG
 from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
@@ -20,6 +24,13 @@ main_cb = CallbackData("main", "target", "action", "id", "editId")
 class MainForm:
 
     @staticmethod
+    async def send_timer_message(chat_id: int, state):
+        await state.finish()
+        await bot.send_message(chat_id=chat_id,
+                               text='Время вышло!',
+                               reply_markup=await MainForm.start_ikb(chat_id))
+
+    @staticmethod
     async def isfloat(value: str):
         try:
             float(value)
@@ -28,7 +39,7 @@ class MainForm:
             return False
 
     @staticmethod
-    async def buying_currency(money: int, currency: str, limit: int, message, state):
+    async def buying_currency(money: int, currency: str, limit: int, message: types.Message, state):
         """
         Функция которая предоставляет проверку покупки валюты BYN или RUB
         :param money: ввод пользователем колличество денег
@@ -69,6 +80,9 @@ class MainForm:
                                      count=bye,
                                      target="BuyBTC")
                                  )
+
+            await asyncio.sleep(10)
+            await MainForm.send_timer_message(chat_id=message.from_user.id, state=state)
 
     @staticmethod
     async def next_ikb() -> InlineKeyboardMarkup:
@@ -884,16 +898,24 @@ class MainForm:
                         check_wallet = await Cryptocurrency.Check_Wallet(btc_address=get_wallet.address)
 
                         if check_wallet:
-                            get_btc = await state.get_data()
-                            text = f"Отправляем BTC {get_btc['buy_BTC']} ➡️➡️➡\n\n" \
-                                   f"Адрес кошелька: {get_wallet.address}\n\n" \
-                                   f"☑️ Проверьте Всё верно?\n" \
-                                   f"Если вы ввели неверный адрес кошелька нажмите кнопку " \
-                                   f"Нет ⛔️, и начните процедуру заново.️"
+                            try:
+                                get_btc = await state.get_data()
+                                text = f"Отправляем BTC {get_btc['buy_BTC']} ➡️➡️➡\n\n" \
+                                       f"Адрес кошелька: {get_wallet.address}\n\n" \
+                                       f"☑️ Проверьте Всё верно?\n" \
+                                       f"Если вы ввели неверный адрес кошелька нажмите кнопку " \
+                                       f"Нет ⛔️, и начните процедуру заново.️"
 
-                            await state.update_data(wallet=get_wallet.address)
-                            await callback.message.edit_text(text=text,
-                                                             reply_markup=await MainForm.CheckOut_wallet_ikb())
+                                await state.update_data(wallet=get_wallet.address)
+                                await callback.message.edit_text(text=text,
+                                                                 reply_markup=await MainForm.CheckOut_wallet_ikb())
+                            except KeyError as e:
+                                print(e)
+                                await callback.message.edit_text(text="У вас вышло время на оплату",
+                                                                 reply_markup=await MainForm.start_ikb(
+                                                                     user_id=callback.from_user.id)
+                                                                 )
+                                await callback.message.delete()
 
                         else:
                             await callback.message.edit_text(text=f"Адрес кошелька <i>{get_wallet.address}</i> "
@@ -904,32 +926,40 @@ class MainForm:
                                                              )
 
                     elif data.get('action') == "get_requisites":
-                        wallet = await state.get_data()
+                        try:
+                            wallet = await state.get_data()
 
-                        text = "🧾РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ\n" \
-                               "        🏧💳💵\n" \
-                               "- СИСТЕМА ЕРИП ПЛАТЕЖИ\n" \
-                               "1. ЕРИП\n" \
-                               "2. БАНКОВСКИЕ ФИНАНСОВЫЕ \n" \
-                               "УСЛУГИ\n" \
-                               "3. БАНК НКФО\n" \
-                               "4. МТБАНК\n" \
-                               "5. ПОПОЛНЕНИЕ ДЕБЕТОВОЙ КАРТЫ\n" \
-                               "6. Р/СЧЁТ       32271867\n" \
-                               "7. ПОСЛЕ ПЕРЕВОДА СРЕДСТВ \n" \
-                               "НАЖИМАЕМ КНОПКУ \n" \
-                               "🏧🏧🏧Я Оплатил 🏧🏧🏧\n" \
-                               "8. ПРИСЫЛАЕМ ЧЕК \n" \
-                               "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
+                            text = "🧾РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ\n" \
+                                   "        🏧💳💵\n" \
+                                   "- СИСТЕМА ЕРИП ПЛАТЕЖИ\n" \
+                                   "1. ЕРИП\n" \
+                                   "2. БАНКОВСКИЕ ФИНАНСОВЫЕ \n" \
+                                   "УСЛУГИ\n" \
+                                   "3. БАНК НКФО\n" \
+                                   "4. МТБАНК\n" \
+                                   "5. ПОПОЛНЕНИЕ ДЕБЕТОВОЙ КАРТЫ\n" \
+                                   "6. Р/СЧЁТ       32271867\n" \
+                                   "7. ПОСЛЕ ПЕРЕВОДА СРЕДСТВ \n" \
+                                   "НАЖИМАЕМ КНОПКУ \n" \
+                                   "🏧🏧🏧Я Оплатил 🏧🏧🏧\n" \
+                                   "8. ПРИСЫЛАЕМ ЧЕК \n" \
+                                   "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
 
-                        text_wallet = f"🚀 На Ваш кошелек  ➡️➡️➡️ <i>{wallet['wallet']}</i>\n" \
-                                      f"будет отправлено <i>{wallet['buy_BTC']}</i> BTC. 🚀"
+                            text_wallet = f"🚀 На Ваш кошелек  ➡️➡️➡️ <i>{wallet['wallet']}</i>\n" \
+                                          f"будет отправлено <i>{wallet['buy_BTC']}</i> BTC. 🚀"
 
-                        await callback.message.edit_text(text=f"{text_wallet}\n\n"
-                                                              f"{text}",
-                                                         reply_markup=await MainForm.user_paid_ikb(),
-                                                         parse_mode="HTML"
-                                                         )
+                            await callback.message.edit_text(text=f"{text_wallet}\n\n"
+                                                                  f"{text}",
+                                                             reply_markup=await MainForm.user_paid_ikb(),
+                                                             parse_mode="HTML"
+                                                             )
+                        except Exception as e:
+                            print(e)
+                            await callback.message.delete()
+                            await callback.message.edit_text(text="У вас вышло время на оплату",
+                                                             reply_markup=await MainForm.start_ikb(
+                                                                 user_id=callback.from_user.id)
+                                                             )
 
                 # Загрузка картинки с потввержением об оплате
                 elif data.get("target") == "UserPaid":
@@ -990,30 +1020,42 @@ class MainForm:
                                                                                                   **get_data)
                                                                     )
 
-                            await bot.download_file(file_path=get_photo.file_path,
-                                                    destination=f'user_check/{transaction.id}_{message.from_user.id}.jpg',
-                                                    timeout=12,
-                                                    chunk_size=1215000)
+                            try:
+                                await bot.download_file(file_path=get_photo.file_path,
+                                                        destination=f'user_check/{transaction.id}_{message.from_user.id}.jpg',
+                                                        timeout=12,
+                                                        chunk_size=1215000)
 
-                            get_transaction = await CRUDTransaction.get(transaction=transaction.id)
-                            get_transaction.check = f'{transaction.id}_{message.from_user.id}'
-                            await CRUDTransaction.update(transaction=get_transaction)
+                                get_transaction = await CRUDTransaction.get(transaction=transaction.id)
+                                get_transaction.check = f'{transaction.id}_{message.from_user.id}'
+                                await CRUDTransaction.update(transaction=get_transaction)
 
-                            text = f"Заявка № {transaction.id}\n\n" \
-                                   f"Курс: {get_data['exchange_rate']}\n" \
-                                   f"Получено {get_data['currency']}: {get_data['sale']}\n" \
-                                   f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
-                                   f"Кошелёк: {get_data['wallet']}"
+                                text = f"Заявка № {transaction.id}\n\n" \
+                                       f"Курс: {get_data['exchange_rate']}\n" \
+                                       f"Получено {get_data['currency']}: {get_data['sale']}\n" \
+                                       f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
+                                       f"Кошелёк: {get_data['wallet']}"
 
-                            for admin in CONFIG.BOT.ADMINS:
-                                await bot.send_photo(chat_id=admin, photo=photo,
-                                                     caption=f"Пользователь оплатил!\n\n"
-                                                             f"{text}")
+                                for admin in CONFIG.BOT.ADMINS:
+                                    await bot.send_photo(chat_id=admin, photo=photo,
+                                                         caption=f"Пользователь оплатил!\n\n"
+                                                                 f"{text}")
 
-                            await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
-                                                      "выполнена мы вам сообщим.\n\n"
-                                                      "Спасибо что выбрали нас 🤗✌️\n\n"
-                                                      "🚀 Желаем Вам отличного настроения!")
+                                await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
+                                                          "выполнена мы вам сообщим.\n\n"
+                                                          "Спасибо что выбрали нас 🤗✌️\n\n"
+                                                          "🚀 Желаем Вам отличного настроения!")
+
+                            except Exception as e:
+                                print(e)
+
+                                await message.answer(text="У вас вышло время на оплату",
+                                                     reply_markup=await MainForm.start_ikb(user_id=message.from_user.id)
+                                                     )
+
+
+
+
                             await state.finish()
                     else:
                         await message.answer(text="Загрузите картинку")

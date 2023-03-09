@@ -1,4 +1,4 @@
-aiogram==2.21
+aiogram==2.25.1
 alembic==1.8.1
 asyncpg==0.26.0
 psycopg2-binary==2.9.3
