@@ -35,4 +35,6 @@ class ConfigSchema(BaseModel):
     COINBASE: CoinbaseSchema
     BLOCK_IO: BlockIoSchemas
 
+    PAYMENT_TIMER: int
+
     DATABASE: str

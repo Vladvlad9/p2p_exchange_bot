@@ -71,7 +71,7 @@ class MainForm:
                    f"📢 Внимание!\n" \
                    f"Текущая цена покупки зафиксирована!\n" \
                    f"Нажав кнопку Купить ✅ " \
-                   f"необходимо оплатить счет в течении ⏱30 минут!\n\n" \
+                   f"необходимо оплатить счет в течении ⏱{CONFIG.PAYMENT_TIMER} минут!\n\n" \
                    f"{user_money} {currency.name} = {bye} BTC"
 
             await message.answer(text=text,
@@ -81,7 +81,7 @@ class MainForm:
                                      target="BuyBTC")
                                  )
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(int(CONFIG.PAYMENT_TIMER))
             await MainForm.send_timer_message(chat_id=message.from_user.id, state=state)
 
     @staticmethod

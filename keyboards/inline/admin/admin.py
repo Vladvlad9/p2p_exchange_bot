@@ -97,6 +97,7 @@ class AdminForm:
         data = {"% Комиссия": {"target": "PaymentSetup", "action": "get_Commission", "id": 0, "editid": 0},
                 "🧾 Расчетный Счет": {"target": "PaymentSetup", "action": "get_Settlement_Account", "id": 0,
                                       "editid": 0},
+                "⏱ Таймер оплаты": {"target": "PaymentSetup", "action": "get_Timer", "id": 0, "editid": 0},
                 "◀️ Назад": {"target": "StartMenu", "action": "", "id": 0, "editid": 0},
                 }
         return InlineKeyboardMarkup(
@@ -152,14 +153,21 @@ class AdminForm:
                             text = "Введите новые данные для Расчётного счёта"
                             await AdminState.REQUISITES.set()
 
+                        elif get_change_data == "TIMER":
+                            text = "Введите новые данные для Таймера"
+                            await AdminState.Timer.set()
+
                         await callback.message.edit_text(text=text,
                                                          reply_markup=await AdminForm.back_ikb(target="PaymentSetup",
                                                                                                action="get_Setup")
                                                          )
 
-                elif data.get("target") == "PaymentSetup":
-                    if data.get("action") == "get_Newsletter":
-                        pass
+                    elif data.get("action") == "get_Timer":
+                        await callback.message.edit_text(text=f"Таймер: {CONFIG.PAYMENT_TIMER} сек",
+                                                         reply_markup=await AdminForm.change_ikb(
+                                                             get_change="TIMER")
+                                                         )
+                        await AdminState.Timer.set()
 
                 elif data.get("target") == "Newsletter":
                     await state.finish()
@@ -289,5 +297,15 @@ class AdminForm:
                                                  action="get_Newsletter")
                                              )
                         await AdminState.NewsletterPhoto.set()
+
+                elif await state.get_state() == "AdminState:Timer":
+                    if message.text.isdigit():
+                        CONFIG.COMMISSION = message.text
+                        await message.answer(text=f"Таймер изменен {message.text} сек",
+                                             reply_markup=await AdminForm.payment_setup_ikb())
+                        await state.finish()
+                    else:
+                        await message.answer(text="Доступен ввод только цифр")
+                        await AdminState.REQUISITES.set()
 
 

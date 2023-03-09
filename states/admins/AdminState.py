@@ -13,3 +13,5 @@ class AdminState(StatesGroup):
 
     NewsletterText = State()
     NewsletterPhoto = State()
+
+    Timer = State()
