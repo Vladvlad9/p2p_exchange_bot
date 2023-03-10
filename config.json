@@ -1,6 +1,6 @@
 {
   "BOT": {
-    "TOKEN": "5571028586:AAHvSaBspDcHkHU5v6doPOtcKsxRWYKLyv8",
+    "TOKEN": "6086687926:AAEbJGM1kBdmxzEcnE7rcGL99GWabKvkq1M",
     "ADMINS": [381252111, 2145728248, 370442143],
     "BOT_LINK": "https://t.me/ExchangeP2PDevBot"
   },
@@ -14,7 +14,7 @@
     "COMMISSION_REFERRAL": 1
   },
 
-  "DATABASE": "postgres:postgres@localhost:5432/exchange",
+  "DATABASE": "root:postgres@localhost:5432/exchange",
 
   "BLOCK_IO": {
     "API_KEY": "6bf5-a452-e24f-d9a1",
