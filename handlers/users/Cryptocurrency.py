@@ -8,6 +8,25 @@ import urllib
 class Cryptocurrency:
 
     @staticmethod
+    async def get_CryptocurrencyBTC(currency: str) -> float:
+        if currency == 'RUB':
+            url = CONFIG.COINBASE.BTC_RUB
+        else:
+            url = CONFIG.COINBASE.BTC_BYN
+
+        get_request = requests.get(url=url)
+        try:
+            if get_request.status_code == 200:
+                data = get_request.json()
+                price = float(data["data"]["assetBySymbol"]["latestQuoteV3"]['price'])
+                round_price = round(price, 3)
+                return round_price
+            else:
+                print(get_request.status_code)
+        except Exception as e:
+            print(e)
+
+    @staticmethod
     async def get_Cryptocurrency(currency: str) -> float:
         url = ""
         if currency == 'USD':

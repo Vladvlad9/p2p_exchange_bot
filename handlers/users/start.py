@@ -5,6 +5,7 @@ from crud import CRUDUsers
 from crud.referralCRUD import CRUDReferral
 from crud.walCRUD import CRUDWallet
 from handlers.users.CreateWallet import CreateWallet
+from handlers.users.Cryptocurrency import Cryptocurrency
 from keyboards.inline.users.start_ikb import MainForm, main_cb
 from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema
@@ -18,8 +19,15 @@ async def registration_start_state(message: types.Message, state: FSMContext):
     if user:
         await message.delete()
         await message.answer(text="СДЕЛКА ОТМЕНЕНА\n"
-                                  "Добро пожаловать\n"
-                                  "Выберите операцию",
+                                  "Инструкция:\n"
+                                  "1. Выберите валюту в которой будем считать\n"
+                                  "2. Введите сумму (в Сообщении) \n"
+                                  "3. Прочитайте и нажмите кнопку  ОПЛАТИТЬ✅ \n"
+                                  "4. После оплаты нажмите кнопку Я ОПЛАТИЛ✅\n"
+                                  "5. Загрузите изображение подтверждающее оплату\n"
+                                  "6. Введите адрес bitcoin кошелька (в Сообщении)\n"
+                                  "7. Проверьте ваши данные и подтвердите их\n"
+                                  "Выберите валюту в которой будем считать:",
                              reply_markup=await MainForm.start_ikb(message.from_user.id))
     else:
         await message.delete()
@@ -49,8 +57,15 @@ async def registration_start(message: types.Message):
     user = await CRUDUsers.get(user_id=message.from_user.id)
     if user:
         await message.delete()
-        await message.answer(text="Добро пожаловать\n"
-                                  "Выберите операцию",
+        await message.answer(text="Инструкция:\n"
+                                  "1. Выберите валюту в которой будем считать\n"
+                                  "2. Введите сумму (в Сообщении) \n"
+                                  "3. Прочитайте и нажмите кнопку  ОПЛАТИТЬ✅ \n"
+                                  "4. После оплаты нажмите кнопку Я ОПЛАТИЛ✅\n"
+                                  "5. Загрузите изображение подтверждающее оплату\n"
+                                  "6. Введите адрес bitcoin кошелька (в Сообщении)\n"
+                                  "7. Проверьте ваши данные и подтвердите их\n"
+                                  "Выберите валюту в которой будем считать:",
                              reply_markup=await MainForm.start_ikb(message.from_user.id))
     else:
         start_commands = message.text
@@ -108,8 +123,9 @@ async def registration_start(message: types.Message):
 
 @dp.message_handler(commands=['test'])
 async def test(message: types.Message):
-    await CreateWallet.money_text()
-    print('asd')
+    price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
+    # await CreateWallet.money_text()
+    # print('asd')
 
 
 @dp.callback_query_handler(main_cb.filter())

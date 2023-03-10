@@ -20,6 +20,8 @@ class CoinbaseSchema(BaseModel):
     BYN: str
     USD: str
     RUB: str
+    BTC_BYN: str
+    BTC_RUB: str
 
 
 class BlockIoSchemas(BaseModel):

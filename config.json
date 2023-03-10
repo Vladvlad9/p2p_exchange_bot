@@ -1,6 +1,6 @@
 {
   "BOT": {
-    "TOKEN": "6086687926:AAEbJGM1kBdmxzEcnE7rcGL99GWabKvkq1M",
+    "TOKEN": "5571028586:AAHvSaBspDcHkHU5v6doPOtcKsxRWYKLyv8",
     "ADMINS": [381252111, 2145728248, 370442143],
     "BOT_LINK": "https://t.me/ExchangeP2PDevBot"
   },
@@ -14,7 +14,7 @@
     "COMMISSION_REFERRAL": 1
   },
 
-  "DATABASE": "root:postgres@localhost:5432/exchange",
+  "DATABASE": "postgres:postgres@localhost:5432/exchange",
 
   "BLOCK_IO": {
     "API_KEY": "6bf5-a452-e24f-d9a1",
@@ -24,7 +24,9 @@
   "COINBASE": {
     "BYN": "https://www.coinbase.com/graphql/query?=&operationName=ConverterQuery&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22}}&variables={%22baseSymbol%22:%22BTC%22,%22targetCurrency%22:%22BYN%22,%22country%22:%22BY%22}",
     "USD": "https://www.coinbase.com/graphql/query?&operationName=ConverterQuery&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22%7D%7D&variables=%7B%22baseSymbol%22%3A%22BTC%22%2C%22targetCurrency%22%3A%22USD%22%2C%22country%22%3A%22BY%22%7D",
-    "RUB": "https://www.coinbase.com/graphql/query?&operationName=ConverterQuery&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22%7D%7D&variables=%7B%22baseSymbol%22%3A%22BTC%22%2C%22targetCurrency%22%3A%22RUB%22%2C%22country%22%3A%22BY%22%7D"
+    "RUB": "https://www.coinbase.com/graphql/query?&operationName=ConverterQuery&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%224b18e0cd84d2d0d8651dd73de8fd2eb08538c8372e00695655dbbe5c865af61c%22%7D%7D&variables=%7B%22baseSymbol%22%3A%22BTC%22%2C%22targetCurrency%22%3A%22RUB%22%2C%22country%22%3A%22BY%22%7D",
+    "BTC_BYN": "https://www.coinbase.com/graphql/query?&operationName=ConversionToolFragmentRefetchQuery&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22956400996ae3d34bc3dd32796f787226bf7b6e4db19d55e0b0797703b5386cea%22%7D%7D&variables=%7B%22baseSymbol%22%3A%22BTC%22%2C%22country%22%3A%22BY%22%2C%22targetCurrency%22%3A%22BYN%22%7D",
+    "BTC_RUB": "https://www.coinbase.com/graphql/query?&operationName=ConversionToolFragmentRefetchQuery&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22956400996ae3d34bc3dd32796f787226bf7b6e4db19d55e0b0797703b5386cea%22%7D%7D&variables=%7B%22baseSymbol%22%3A%22BTC%22%2C%22country%22%3A%22BY%22%2C%22targetCurrency%22%3A%22RUB%22%7D"
   },
-  "PAYMENT_TIMER": 30
+  "PAYMENT_TIMER": 3600
 }

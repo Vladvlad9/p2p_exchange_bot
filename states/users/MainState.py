@@ -8,3 +8,4 @@ class MainState(StatesGroup):
 
     WalletRecipient = State()
     Money = State()
+    ByeBTC = State()

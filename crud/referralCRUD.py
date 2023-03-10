@@ -36,11 +36,18 @@ class CRUDReferral(object):
     @staticmethod
     @create_async_session
     async def get(referral_id: int = None,
+                  id: int = None,
                   session: AsyncSession = None) -> ReferralInDBSchema | None:
-        referrals = await session.execute(
-            select(Referral)
-                .where(Referral.id == referral_id)
-        )
+        if referral_id:
+            referrals = await session.execute(
+                select(Referral)
+                    .where(Referral.referral_id == referral_id)
+            )
+        else:
+            referrals = await session.execute(
+                select(Referral)
+                    .where(Referral.id == id)
+            )
         if referral := referrals.first():
             return ReferralInDBSchema(**referral[0].__dict__)
 
