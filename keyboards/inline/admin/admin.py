@@ -129,7 +129,8 @@ class AdminForm:
                         await state.finish()
 
                     elif data.get("action") == "get_Commission":
-                        await callback.message.edit_text(text=f"Комиссия составляет {CONFIG.COMMISSION.COMMISSION_BOT}%",
+                        a = int(CONFIG.COMMISSION.COMMISSION_BOT)
+                        await callback.message.edit_text(text=f"Комиссия составляет {int(CONFIG.COMMISSION.COMMISSION_BOT)}%",
                                                          reply_markup=await AdminForm.change_ikb(
                                                              get_change="COMMISSION")
                                                          )
@@ -231,7 +232,7 @@ class AdminForm:
             if state:
                 if await state.get_state() == "AdminState:COMMISSION":
                     if message.text.isdigit():
-                        CONFIG.COMMISSION = message.text
+                        CONFIG.COMMISSION.COMMISSION_BOT = int(message.text)
                         await message.answer(text=f"Комиссия изменена {message.text}",
                                              reply_markup=await AdminForm.payment_setup_ikb())
                         await state.finish()
@@ -241,7 +242,7 @@ class AdminForm:
 
                 elif await state.get_state() == "AdminState:REQUISITES":
                     if message.text.isdigit():
-                        CONFIG.COMMISSION = message.text
+                        CONFIG.PAYMENT.REQUISITES = int(message.text)
                         await message.answer(text=f"Комиссия изменена {message.text}",
                                              reply_markup=await AdminForm.payment_setup_ikb())
                         await state.finish()
