@@ -129,7 +129,7 @@ class AdminForm:
                         await state.finish()
 
                     elif data.get("action") == "get_Commission":
-                        await callback.message.edit_text(text=f"Комиссия составляет {CONFIG.COMMISSION}%",
+                        await callback.message.edit_text(text=f"Комиссия составляет {CONFIG.COMMISSION.COMMISSION_BOT}%",
                                                          reply_markup=await AdminForm.change_ikb(
                                                              get_change="COMMISSION")
                                                          )
