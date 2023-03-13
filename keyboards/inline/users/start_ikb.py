@@ -72,8 +72,8 @@ class MainForm:
 
             currency = await CRUDCurrency.get(currency_name=currency)
 
-            percent = round((Decimal(bye) / Decimal(100) * CONFIG.COMMISSION.COMMISSION_BOT), 8)
-            percent_referral = round((Decimal(bye) / Decimal(100) * CONFIG.COMMISSION.COMMISSION_REFERRAL), 8)
+            percent = round((Decimal(bye) / Decimal(100) * Decimal(CONFIG.COMMISSION.COMMISSION_BOT)), 8)
+            percent_referral = round((Decimal(bye) / Decimal(100) * Decimal(CONFIG.COMMISSION.COMMISSION_REFERRAL)), 8)
 
             get_referral = await CRUDReferral.get(referral_id=message.from_user.id)
 
