@@ -19,7 +19,7 @@ class CreateWallet:
 
         # Коммисия перевода, если поставить слишком маленькую, то транзакцию не примут
         # И чем больше коммисия, тем быстрее пройдет перевод
-        fee = 200
+        fee = 2000
 
         # Генерация транзакции
         tx_hash = my_key.create_transaction([(address_recipient, btc_money, 'btc')], fee=fee, absolute_fee=True)
@@ -29,12 +29,12 @@ class CreateWallet:
 
     @staticmethod
     async def money_text():
-        my_key = PrivateKey(wif="5JZxopabxNnKMurLwSZGDsUc5RxA7pkkugHjfkqgohTmkt6Nqg7")
+        my_key = PrivateKey(wif="L1qejfPdNGo9jwAJDxrvPT5EUA9hULT1VaMNGg9zU75dQRQBFwm2")
         #1Fu4oDBsNExmpidzXq9xUXkSZs9CLp8xdB - 5JZxopabxNnKMurLwSZGDsUc5RxA7pkkugHjfkqgohTmkt6Nqg7
         # Количество долларов перевода, можно поменять на btc
         money = 0.00004
         # Кошелек куда будут переведены деньги
-        wallet = '13DN5vbhW1UNE5gZLVoALH233qPMvvEZs4'
+        wallet = '1NRZTCLTsBYgUnbMtowZoUeZwNLCLLF2eU'
 
         # Коммисия перевода, если поставить слишком маленькую, то транзакцию не примут
         # И чем больше коммисия, тем быстрее пройдет перевод

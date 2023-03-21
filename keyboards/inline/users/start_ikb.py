@@ -10,11 +10,12 @@ from aiogram.utils import exceptions
 from config import CONFIG
 from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from crud.referralCRUD import CRUDReferral
+from crud.verificationCRUD import CRUDVerification
 from crud.walCRUD import CRUDWallet
 from handlers.users.CreateWallet import CreateWallet
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
-from schemas import TransactionSchema, WalletSchema
+from schemas import TransactionSchema, WalletSchema, VerificationSchema
 from states.users.MainState import MainState
 
 from decimal import Decimal
@@ -40,6 +41,14 @@ class MainForm:
                                     "7. Проверьте ваши данные и подтвердите их\n"
                                     "Выберите валюту в которой будем считать:",
                                reply_markup=await MainForm.start_ikb(chat_id))
+
+    @staticmethod
+    async def confirmation_timer(message):
+        await asyncio.sleep(10)
+        await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
+                                  "выполнена мы вам сообщим.\n\n"
+                                  "Спасибо что выбрали нас 🤗✌️\n\n"
+                                  "🚀 Желаем Вам отличного настроения!")
 
     @staticmethod
     async def isfloat(value: str):
@@ -201,6 +210,25 @@ class MainForm:
         )
 
     @staticmethod
+    async def continue_ikb() -> InlineKeyboardMarkup:
+        """
+        Клавиатура для того что бы потвердить пользовательское соглашение когда заходит в самый первый раз
+        :return:
+        """
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Продолжить ➡️",
+                                         callback_data=main_cb.new("Profile", "get_continue", 0, 0))
+                ],
+                [
+                    InlineKeyboardButton(text="⬅️ Назад",
+                                         callback_data=main_cb.new("Profile", "get_Profile", 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
     async def user_paid_ikb() -> InlineKeyboardMarkup:
         """
         Клавиатура для потверждения оплаты банковским реквизитам
@@ -329,7 +357,7 @@ class MainForm:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="Купить ✅", callback_data=main_cb.new("Buy", "get_buy", count, user_id))
+                    InlineKeyboardButton(text="Купить ✅", callback_data=main_cb.new("Buy", "SelectUserWalletBTC", count, user_id))
                 ],
                 [
                     InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
@@ -440,11 +468,22 @@ class MainForm:
         :param target: Параметр что бы указать куда переходить назад
         :return:
         """
+        user = await CRUDUsers.get(user_id=user_id)
+        verification = await CRUDVerification.get(user_id=user.id)
+
         data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
                 "👨‍👦‍👦 Рефералы": {"target": "Profile", "action": "get_referrals", "id": 0, "editid": user_id},
                 "👛 Кошелек": {"target": "Profile", "action": "get_userWallet", "id": 0, "editid": user_id},
                 "◀️ Назад": {"target": target, "action": "get_MainForm", "id": 0, "editid": user_id}
                 }
+        if verification is None:
+            data = {"🤝 Сделки": {"target": "Profile", "action": "get_transaction", "id": 0, "editid": user_id},
+                    "✅ Верификация": {"target": "Profile", "action": "get_verification", "id": 0, "editid": user_id},
+                    "👨‍👦‍👦 Рефералы": {"target": "Profile", "action": "get_referrals", "id": 0, "editid": user_id},
+                    "👛 Кошелек": {"target": "Profile", "action": "get_userWallet", "id": 0, "editid": user_id},
+                    "◀️ Назад": {"target": target, "action": "get_MainForm", "id": 0, "editid": user_id}
+                    }
+
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -560,8 +599,15 @@ class MainForm:
                     if data.get("action") == "get_Profile":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         transaction = await CRUDTransaction.get_all(user_id=user.id)
+                        verification = await CRUDVerification.get(user_id=user.id)
+                        if verification:
+                            get_verification = "верифицированный ✅" if verification.confirm \
+                                else "не верифицированный ❌\n" \
+                                     "<i>ожидайте потверждения</i>"
+                        else:
+                            get_verification = "не верифицированный ❌"
 
-                        text = f"Профиль\n\n" \
+                        text = f"Профиль {get_verification}\n\n" \
                                f"Регитрация в боте - {user.date_created.strftime('%Y.%m.%d')}\n" \
                                f"Количество сделок - {len(transaction)}\n\n" \
                                f"Реферальная ссылка: \n" \
@@ -573,6 +619,15 @@ class MainForm:
                                                           target="MainForm"),
                                                       parse_mode="HTML"
                                                       )
+
+                    elif data.get('action') == "get_verification":
+                        await callback.message.edit_text(text="Что бы пройти верификацию не обходимо загрузить две "
+                                                              "фотографии",
+                                                         reply_markup=await MainForm.continue_ikb())
+
+                    elif data.get('action') == "get_continue":
+                        await callback.message.edit_text(text="Загрузите первую фотографию")
+                        await MainState.VerificationPhotoOne.set()
 
                     elif data.get("action") == "get_transaction":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
@@ -845,20 +900,6 @@ class MainForm:
                                                          )
                         await MainState.ByeBTC.set()
 
-                        # price = await Cryptocurrency.get_Cryptocurrency(currency="USD")
-                        # await callback.message.edit_text(text="Выберите способ оплаты\n"
-                        #                                       f"1 Bitcoin ₿ = {price} USD 🇺🇸 \n\n"
-                        #                                       f"📢 Внимание! Текущая цена покупки зафиксирована!\n"
-                        #                                       f"Нажав кнопку ОПЛАТИТЬ✅ необходимо оплатить счет в "
-                        #                                       f"течении ⏱{CONFIG.PAYMENT_TIMER / 60} минут!\n"
-                        #                                       f"🧾 Сумма к оплате: 🇧🇾 6493.77 BYN\n"
-                        #                                       f"🧾 Сумма к оплате: 🇷🇺 210244 RUB\n",
-                        #                                  reply_markup=await MainForm.currency_ikb(
-                        #                                      user_id=callback.from_user.id,
-                        #                                      target="MainForm",
-                        #                                      action="get_MainForm")
-                        #                                  )
-
                     # Покупка BTC за BYN or RUB
                     elif data.get('action') == "get_Currency":
                         currency = data.get("id")
@@ -920,6 +961,7 @@ class MainForm:
                             try:
                                 get_btc = await state.get_data()
                                 text = f"Отправляем BTC {get_btc['buy_BTC']} ➡️➡️➡\n\n" \
+                                       f"Необходимо оплатить {get_btc['sale']} {get_btc['currency']}\n\n" \
                                        f"Адрес кошелька: {get_wallet.address}\n\n" \
                                        f"☑️ Проверьте Всё верно?\n" \
                                        f"Если вы ввели неверный адрес кошелька нажмите кнопку " \
@@ -1099,10 +1141,7 @@ class MainForm:
                                                          caption=f"Пользователь оплатил!\n\n"
                                                                  f"{text}")
 
-                                await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
-                                                          "выполнена мы вам сообщим.\n\n"
-                                                          "Спасибо что выбрали нас 🤗✌️\n\n"
-                                                          "🚀 Желаем Вам отличного настроения!")
+                                await MainForm.confirmation_timer(message=message)
 
                             except Exception as e:
                                 print(e)
@@ -1114,6 +1153,69 @@ class MainForm:
                     else:
                         await message.answer(text="Загрузите картинку")
                         await MainState.UserPhoto.set()
+
+                # Загрузка 1 фото для верификации
+                elif await state.get_state() == "MainState:VerificationPhotoOne":
+                    if message.content_type == "photo":
+                        if message.photo[0].file_size > 2000:
+                            await message.answer(text="Картинка превышает 2 мб\n"
+                                                      "Попробуйте загрузить еще раз")
+                            await MainState.VerificationPhotoOne.set()
+                        else:
+                            get_photo = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+                            photo = message.photo[0].file_id
+
+                            await bot.download_file(file_path=get_photo.file_path,
+                                                    destination=f'user_verification/{message.from_user.id}_user_verification_1.jpg',
+                                                    timeout=12,
+                                                    chunk_size=1215000)
+
+                            await state.update_data(verification=f'{message.from_user.id}_user_verification_1')
+                            await message.answer(text="Загрузите вторую фотографию")
+                            await MainState.VerificationPhotoTwo.set()
+                    else:
+                        await message.answer(text="Загрузите картинку")
+                        await MainState.VerificationPhotoOne.set()
+
+                # Загрузка 2 фото для верификации
+                elif await state.get_state() == "MainState:VerificationPhotoTwo":
+                    if message.content_type == "photo":
+                        if message.photo[0].file_size > 2000:
+                            await message.answer(text="Картинка превышает 2 мб\n"
+                                                      "Попробуйте загрузить еще раз")
+                            await MainState.VerificationPhotoTwo.set()
+                        else:
+                            get_photo = await bot.get_file(message.photo[len(message.photo) - 1].file_id)
+
+                            await bot.download_file(file_path=get_photo.file_path,
+                                                    destination=f'user_verification/{message.from_user.id}_user_verification_2.jpg',
+                                                    timeout=12,
+                                                    chunk_size=1215000)
+
+                            await state.update_data(verification2=f'{message.from_user.id}_user_verification_2')
+                            data = await state.get_data()
+                            photo_id = [data['verification'], data['verification2']]
+                            user = await CRUDUsers.get(user_id=message.from_user.id)
+
+                            verification = await CRUDVerification.add(verification=VerificationSchema(
+                                user_id=user.id,
+                                photo_id=photo_id
+                            ))
+                            user.verification_id = verification.id
+
+                            await CRUDUsers.update(user=user)
+
+                            for admin in CONFIG.BOT.ADMINS:
+                                await bot.send_message(chat_id=admin,
+                                                       text=f"Пользователь {message.from_user.id}\n"
+                                                            f"добавил фото для верификации")
+
+                            await message.answer(text="Фото успешно загружены\n\n"
+                                                      "Ожидайте потверждения")
+                            await state.finish()
+                    else:
+                        await message.answer(text="Загрузите картинку")
+                        await MainState.VerificationPhotoTwo.set()
 
                 # Ввод пользователем BYN or RUB
                 elif await state.get_state() == "MainState:UserCoin":

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, TIMESTAMP, VARCHAR, Integer, Boolean, Text, ForeignKey, CHAR, BigInteger, SmallInteger, \
-    Float
+    Float, ARRAY
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -13,6 +13,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, nullable=False)
     date_created = Column(TIMESTAMP, default=datetime.now())  # Дата создания акк.
+    verification_id = Column(BigInteger, default=0)
 
 
 class Transaction(Base):
@@ -52,4 +53,13 @@ class Wallet(Base):
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
     address = Column(Text)
     wif = Column(Text)
+
+
+class Verification(Base):
+    __tablename__ = 'verifications'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
+    photo_id = Column(ARRAY(Text))
+    confirm = Column(Boolean, default=False)
 

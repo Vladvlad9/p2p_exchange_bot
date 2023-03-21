@@ -123,7 +123,9 @@ async def registration_start(message: types.Message):
 
 @dp.message_handler(commands=['test'])
 async def test(message: types.Message):
-    price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
+    #price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
+    await CreateWallet.money_text()
+    print('asd')
     # await CreateWallet.money_text()
     # print('asd')
 

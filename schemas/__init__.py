@@ -4,3 +4,4 @@ from .transactionsSchemas import TransactionSchema, TransactionInDBSchema
 from .referralShemas import ReferralInDBSchema, ReferralSchema
 from .currencySchemas import CurrencySchema, CurrencyInDBSchema
 from .walletSchemas import WalletInDBSchema, WalletSchema
+from .verification import VerificationSchema, VerificationInDBSchema

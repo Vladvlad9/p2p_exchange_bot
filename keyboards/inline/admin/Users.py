@@ -1,10 +1,11 @@
 import random
 
 from aiogram.dispatcher import FSMContext
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, MediaGroup, InputFile
 from aiogram.utils.exceptions import BadRequest
 
 from crud import CRUDTransaction, CRUDCurrency, CRUDUsers
+from crud.verificationCRUD import CRUDVerification
 from handlers.users.AllCallbacks import admin_cb, user_cb
 from handlers.users.TransactionHandler import TransactionHandler
 from keyboards.inline.admin.admin import AdminForm
@@ -93,6 +94,25 @@ class Users:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(text="◀️ Назад", callback_data=admin_cb.new(target, action, 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def continue_ikb(user_id: int) -> InlineKeyboardMarkup:
+        """
+        Клавиатура для того что бы потвердить пользовательское соглашение когда заходит в самый первый раз
+        :return:
+        """
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Потвердить ✅️",
+                                         callback_data=user_cb.new("Verification", "get_confirm", 0, user_id, 0))
+                ],
+                [
+                    InlineKeyboardButton(text="⬅️ Назад",
+                                         callback_data=user_cb.new("Profile", "get_Profile", 0, 0, 0))
                 ]
             ]
         )
@@ -188,6 +208,14 @@ class Users:
                 "id": "No",
                 "editid": 0
             },
+
+            "Верификация": {
+                "target": "Verification",
+                "action": "get_Verification",
+                "pagination": "",
+                "id": 0,
+                "editid": 0
+            }
         }
 
         return InlineKeyboardMarkup(
@@ -843,6 +871,29 @@ class Users:
                             await state.update_data(captcha=captcha[2])
                             await AdminState.CAPTCHA_TWO.set()
 
+                elif data.get('target') == "Verification":
+                    if data.get('action') == "get_Verification":
+                        await callback.message.edit_text(text="Введите id Пользователя",
+                                                         reply_markup=await Users.back_ikb(target="Users",
+                                                                                           action="get_Users")
+                                                         )
+                        await AdminState.Verification.set()
+
+                    elif data.get('action') == "get_confirm":
+                        try:
+                            id = data.get('id')
+                            user = await CRUDUsers.get(user_id=int(id))
+                            verification = await CRUDVerification.get(user_id=user.id)
+                            verification.confirm = True
+                            await CRUDVerification.update(verification=verification)
+                            await bot.send_message(chat_id=user.user_id, text="Вам верифицировали аккаунт!")
+                            await callback.message.edit_text(text="Вы успешно потвердили аккаунт")
+                            await state.finish()
+                        except Exception as e:
+                            print(e)
+                            await callback.message.edit_text(text="Админ панель",
+                                                             reply_markup=await AdminForm.start_ikb())
+
         if message:
             try:
                 await bot.delete_message(
@@ -997,3 +1048,40 @@ class Users:
                     else:
                         await message.answer(text="Доступен ввод только цифр")
                         await AdminState.UsersId.set()
+
+                elif await state.get_state() == "AdminState:Verification":
+                    if message.text.isdigit():
+                        album = MediaGroup()
+                        user = await CRUDUsers.get(user_id=int(message.text))
+                        if user:
+                            verification = await CRUDVerification.get(user_id=user.id)
+                            if verification:
+                                if verification.confirm:
+                                    await message.answer(text="У данного пользователя аккаунт верифицирован ✅",
+                                                         reply_markup=await AdminForm.start_ikb())
+                                    await state.finish()
+                                else:
+                                    photo_one = InputFile(f"user_verification/{verification.photo_id[0]}.jpg")
+                                    photo_two = InputFile(f"user_verification/{verification.photo_id[1]}.jpg")
+
+                                    album.attach_photo(photo=photo_one)
+                                    album.attach_photo(photo=photo_two)
+
+                                    await message.answer_media_group(media=album)
+                                    await message.answer(text="Потвердить аккаунт",
+                                                         reply_markup=await Users.continue_ikb(user_id=int(message.text)))
+                                    await state.finish()
+                            else:
+                                await message.answer(text="Пользователь не добавил фото потверждения",
+                                                     reply_markup=await AdminForm.start_ikb())
+                                await state.finish()
+                        else:
+                            await message.answer(text="Пользователя не найдено\n"
+                                                      "Попробуйте ввести еще раз")
+                            await AdminState.Verification.set()
+                    else:
+                        await message.answer(text="Доступен ввод цифр\n"
+                                                  "Попробуйте ввести еще раз")
+                        await AdminState.Verification.set()
+
+

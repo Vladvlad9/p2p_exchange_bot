@@ -15,3 +15,5 @@ class AdminState(StatesGroup):
     NewsletterPhoto = State()
 
     Timer = State()
+
+    Verification = State()
