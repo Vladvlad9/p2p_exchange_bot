@@ -1,13 +1,14 @@
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message, InputFile
 from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
-from crud import CRUDUsers
+from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from handlers.users.AllCallbacks import admin_cb
 from loader import bot
 from states.admins.AdminState import AdminState
 
+import pandas as pd
 
 class AdminForm:
 
@@ -58,6 +59,7 @@ class AdminForm:
         data = {"⚙️ Настройка Оплаты": {"target": "PaymentSetup", "action": "get_Setup", "id": 0, "editid": 0},
                 "📨 Рассылка": {"target": "Newsletter", "action": "get_Newsletter", "id": 0, "editid": 0},
                 "👨‍💻 Пользователи": {"target": "Users", "action": "get_Users", "id": 0, "editid": 0},
+                "📊 Отчет": {"target": "Report", "action": "get_Report", "id": 0, "editid": 0},
                 }
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -217,6 +219,44 @@ class AdminForm:
                                                              action="get_Newsletter")
                                                          )
                         await AdminState.NewsletterText.set()
+
+                elif data.get('target') == "Report":
+                    if data.get('action') == "get_Report":
+                        transactions = await CRUDTransaction.get_all()
+                        user_id = []
+                        exchange_rate = []
+                        buy_BTC = []
+                        sale = []
+                        wallet = []
+                        date_created = []
+                        currency_id = []
+                        for transaction in transactions:
+                            user = await CRUDUsers.get(id=transaction.user_id)
+                            user_id.append(user.user_id)
+                            exchange_rate.append(transaction.exchange_rate)
+                            sale.append(transaction.sale)
+                            currency = await CRUDCurrency.get(currency_id=int(transaction.currency_id))
+                            currency_id.append(currency.name)
+                            wallet.append(transaction.wallet)
+                            date_created.append(transaction.date_created)
+                            buy_BTC.append(transaction.buy_BTC)
+
+                        df = pd.DataFrame({
+                            'user_id': user_id,
+                            'Курс обмена': exchange_rate,
+                            'Куплено BTC': buy_BTC,
+                            'Продано': sale,
+                            'Валюта': currency_id,
+                            'кошелек': wallet,
+                            'Дата сделки': date_created
+                        })
+                        df.to_excel('Отчет.xlsx')
+
+                        await callback.message.answer_document(document=open('Отчет.xlsx', 'rb'),
+                                                               caption="Отчет сформирован",
+                                                               parse_mode="HTML"
+                                                               )
+
 
         if message:
             await message.delete()
