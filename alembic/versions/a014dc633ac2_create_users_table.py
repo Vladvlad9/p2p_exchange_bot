@@ -55,10 +55,11 @@ def upgrade() -> None:
                     sa.PrimaryKeyConstraint('id')
                     )
 
-    op.create_table('wallets',
+    op.create_table('verifications',
                     sa.Column('id', sa.BigInteger(), nullable=False),
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
                     sa.Column('photo_id', sa.ARRAY(sa.Text), nullable=True),
+                    sa.Column('confirm', sa.Boolean, default=False),
                     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
                     sa.PrimaryKeyConstraint('id')
                     )
