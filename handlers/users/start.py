@@ -4,15 +4,19 @@ from aiogram.dispatcher import FSMContext
 from crud import CRUDUsers
 from crud.referralCRUD import CRUDReferral
 from crud.walCRUD import CRUDWallet
+from handlers.users.AllCallbacks import money_cb
 from handlers.users.CreateWallet import CreateWallet
 from handlers.users.Cryptocurrency import Cryptocurrency
+from keyboards.inline.users.money_reload import Money_reload
 from keyboards.inline.users.start_ikb import MainForm, main_cb
 from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema
+from states.users.ReloadState import ReloadState
 from states.users.MainState import MainState
 
 
 @dp.message_handler(commands=["start"], state=MainState.all_states)
+@dp.message_handler(commands=["start"], state=ReloadState.all_states)
 async def registration_start_state(message: types.Message, state: FSMContext):
     await state.finish()
     user = await CRUDUsers.get(user_id=message.from_user.id)
@@ -124,7 +128,10 @@ async def registration_start(message: types.Message):
 @dp.message_handler(commands=['test'])
 async def test(message: types.Message):
     #price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
-    await CreateWallet.money_text()
+    #await CreateWallet.money_text()
+    a = await Cryptocurrency.get_rub()
+    b = await Cryptocurrency.get_Cryptocurrency("USD")
+    c = a * b
     print('asd')
     # await CreateWallet.money_text()
     # print('asd')
@@ -139,3 +146,14 @@ async def process_callback(callback: types.CallbackQuery, state: FSMContext = No
 @dp.message_handler(state=MainState.all_states, content_types=["text", "photo"])
 async def process_message(message: types.Message, state: FSMContext = None):
     await MainForm.process_profile(message=message, state=state)
+
+
+@dp.callback_query_handler(money_cb.filter())
+@dp.callback_query_handler(money_cb.filter(), state=ReloadState.all_states)
+async def process_callback_Money_reload(callback: types.CallbackQuery, state: FSMContext = None):
+    await Money_reload.Money_reload(callback=callback, state=state)
+
+
+@dp.message_handler(state=ReloadState.all_states, content_types=["text", "photo"])
+async def process_Money_reload(message: types.Message, state: FSMContext = None):
+    await Money_reload.Money_reload(message=message, state=state)

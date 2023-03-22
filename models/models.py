@@ -29,6 +29,7 @@ class Transaction(Base):
     date_created = Column(TIMESTAMP, default=datetime.now())
     approved = Column(Boolean, default=False)
     check = Column(Text, default="None")
+    operation_id = Column(Integer, default=0)
 
 
 class Referral(Base):
@@ -41,6 +42,13 @@ class Referral(Base):
 
 class Currency(Base):
     __tablename__ = 'currency'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(Text)
+
+
+class Operation(Base):
+    __tablename__ = 'operations'
 
     id = Column(Integer, primary_key=True)
     name = Column(Text)

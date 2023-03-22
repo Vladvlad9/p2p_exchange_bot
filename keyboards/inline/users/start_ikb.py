@@ -12,6 +12,7 @@ from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from crud.referralCRUD import CRUDReferral
 from crud.verificationCRUD import CRUDVerification
 from crud.walCRUD import CRUDWallet
+from handlers.users.AllCallbacks import money_cb, main_cb
 from handlers.users.CreateWallet import CreateWallet
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
@@ -20,8 +21,6 @@ from states.users.MainState import MainState
 
 from decimal import Decimal
 from states.users.TransferMoneyState import TransferMoneyState
-
-main_cb = CallbackData("main", "target", "action", "id", "editId")
 
 
 class MainForm:
@@ -418,7 +417,7 @@ class MainForm:
                                              callback_data=main_cb.new("Profile", "money_transfer", confirm, user_id)
                                              ),
                         InlineKeyboardButton(text="📥 Пополнить",
-                                             callback_data=main_cb.new("Profile", "money_transfer", 0, user_id)
+                                             callback_data=money_cb.new("get_Profile", "money_reload", confirm, user_id)
                                              )
                     ],
                     [

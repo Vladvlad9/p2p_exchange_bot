@@ -11,3 +11,5 @@ class MainState(StatesGroup):
     ByeBTC = State()
     VerificationPhotoOne = State()
     VerificationPhotoTwo = State()
+
+    ReloadMoney = State()

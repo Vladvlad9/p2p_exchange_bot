@@ -12,6 +12,7 @@ class TransactionSchema(BaseModel):
     date_created: datetime = Field(default=datetime.now())
     approved: bool = Field(default=False)
     check: str = Field(default="None")
+    operation_id: int = Field(default=0)
 
 
 class TransactionInDBSchema(TransactionSchema):

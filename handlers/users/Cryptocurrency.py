@@ -1,11 +1,52 @@
-import requests
+from decimal import Decimal
 
+import requests
 from config import CONFIG
 from fake_useragent import UserAgent
 import urllib
+from datetime import datetime
 
 
 class Cryptocurrency:
+
+    @staticmethod
+    async def get_usd():
+        get_request = requests.get(url="https://www.nbrb.by/api/exrates/rates/431")
+        try:
+            if get_request.status_code == 200:
+                data = get_request.json()
+                price = float(data["Cur_OfficialRate"])
+                return price
+            else:
+                print(get_request.status_code)
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    async def get_rub():
+        current_datetime = datetime.now()
+        month = current_datetime.month
+
+        if month < 10:
+            month = f"0{current_datetime.month}"
+
+        try:
+            url = f"https://www.cbr.ru/scripts/XML_daily.asp?date_req={current_datetime.day}/" \
+                  f"{month}/{current_datetime.year}"
+            get_request = requests.get(url=url)
+
+            if get_request.status_code == 200:
+
+                import xmltodict
+
+                data = requests.get(url)
+                xpars = xmltodict.parse(data.text)
+                price = xpars['ValCurs']['Valute'][13]['Value'].replace(',', '.')
+                return price
+            else:
+                print(get_request.status_code)
+        except Exception as e:
+            print(e)
 
     @staticmethod
     async def get_CryptocurrencyBTC(currency: str) -> float:
