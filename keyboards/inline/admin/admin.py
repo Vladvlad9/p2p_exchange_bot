@@ -58,8 +58,31 @@ class AdminForm:
         """
         data = {"⚙️ Настройка Оплаты": {"target": "PaymentSetup", "action": "get_Setup", "id": 0, "editid": 0},
                 "📨 Рассылка": {"target": "Newsletter", "action": "get_Newsletter", "id": 0, "editid": 0},
+                "📝 Изменение текста": {"target": "Text_change", "action": "get_Сhange", "id": 0, "editid": 0},
                 "👨‍💻 Пользователи": {"target": "Users", "action": "get_Users", "id": 0, "editid": 0},
                 "📊 Отчет": {"target": "Report", "action": "get_Report", "id": 0, "editid": 0},
+                }
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=name, callback_data=admin_cb.new(name_items["target"],
+                                                                               name_items["action"],
+                                                                               name_items["id"],
+                                                                               name_items["editid"]))
+                ] for name, name_items in data.items()
+            ]
+        )
+
+    @staticmethod
+    async def Text_change_ikb() -> InlineKeyboardMarkup:
+        """
+        Клавиатура главного меню админ панели
+        :return:
+        """
+        data = {"При первом входе": {"target": "Text_change", "action": "get_Setup", "id": 0, "editid": 0},
+                "Главное меню": {"target": "Text_change", "action": "get_Newsletter", "id": 0, "editid": 0},
+                "Реквизиты": {"target": "Text_change", "action": "get_Сhange", "id": 0, "editid": 0},
+                "◀️ Назад": {"target": "StartMenu", "action": "", "id": 0, "editid": 0},
                 }
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -257,6 +280,10 @@ class AdminForm:
                                                                parse_mode="HTML"
                                                                )
 
+                elif data.get('target') == "Text_change":
+                    if data.get('action') == "get_Сhange":
+                        await callback.message.edit_text(text="📝 Изменение текста",
+                                                         reply_markup=await AdminForm.Text_change_ikb())
 
         if message:
             await message.delete()
