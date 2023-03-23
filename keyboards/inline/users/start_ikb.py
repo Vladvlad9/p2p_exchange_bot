@@ -126,12 +126,13 @@ class MainForm:
 
     @staticmethod
     async def buying_BTC(user_money, message, state):
-        price_BYN = await Cryptocurrency.get_CryptocurrencyBTC(currency="BYN")
-        price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+        price_BYN = await Cryptocurrency.get_usd()
+        price_RUB = await Cryptocurrency.get_rub()
+
         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
 
-        bye_byn = round(Decimal(user_money) * Decimal(price_BYN), 8)
-        bye_rub = round(Decimal(user_money) * Decimal(price_RUB), 8)
+        bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 3)
+        bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 3)
 
         text = f"📈 Текущая цена Bitcoin: {price_BTC}$\n" \
                f"📢 Внимание! Текущая цена покупки зафиксирована!\n" \
@@ -887,17 +888,20 @@ class MainForm:
                         currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
 
                         if currency == "BYN":
-                            price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
+                            #price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
+                            byn = await Cryptocurrency.get_usd()
+                            usd = await Cryptocurrency.get_Cryptocurrency("USD")
+                            price = round(Decimal(byn) * Decimal(usd), 3)
                             text = "Купить BTC за BYN\n" \
-                                   f"1 Bitcoin ₿ = {price} BYN 🇧🇾 " \
-                                   f"<a href='https://www.coinbase.com/ru/converter/btc/byn'>Coinbase</a>\n\n" \
+                                   f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
                                    f"<i>Мин. сумма 50 BYN</i>"
                         else:
-                            price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
-
+                            #price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
+                            usd = await Cryptocurrency.get_Cryptocurrency("USD")
+                            rub = await Cryptocurrency.get_rub()
+                            price = round(Decimal(rub) * Decimal(usd), 3)
                             text = "Купить BTC за RUB\n" \
-                                   f"1 Bitcoin ₿ = {price} RUB 🇷🇺 " \
-                                   f"<a href='https://www.coinbase.com/ru/converter/btc/rub'>Coinbase</a>\n\n" \
+                                   f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
                                    f"<i>Мин. сумма 1000 RUB</i>"
 
                         await state.update_data(currency=currency)
