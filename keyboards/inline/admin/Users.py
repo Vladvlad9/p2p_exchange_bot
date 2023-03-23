@@ -171,6 +171,8 @@ class Users:
     async def users_ikb() -> InlineKeyboardMarkup:
         approved_transaction = list(filter(lambda x: x.approved, await CRUDTransaction.get_all()))
         not_approved_transaction = list(filter(lambda x: x.approved == False, await CRUDTransaction.get_all()))
+        replenishment = list(filter(lambda x: x.operation_id == 3, await CRUDTransaction.get_all()))
+        verification = list(filter(lambda x: x.confirm == False, await CRUDVerification.get_all()))
         """
         Клавиатура главного меню админ панели
 
@@ -209,9 +211,17 @@ class Users:
                 "editid": 0
             },
 
-            "Верификация": {
+            f"Верификация ({len(verification)})": {
                 "target": "Verification",
                 "action": "get_Verification",
+                "pagination": "",
+                "id": 0,
+                "editid": 0
+            },
+
+            f"Пополнение ({len(replenishment)})": {
+                "target": "Replenishment",
+                "action": "get_Replenishment",
                 "pagination": "",
                 "id": 0,
                 "editid": 0
@@ -366,6 +376,121 @@ class Users:
                     ]
                 ]
             )
+
+    @staticmethod
+    async def pagination_Replenishment_ikb(target: str,
+                                                   orders: list,
+                                                   action: str = None,
+                                                   burger_menu: str = None,
+                                                   page: int = 0) -> InlineKeyboardMarkup:
+        """
+        Клавиатура пагинации проведенных операций пользователя
+        :param action_back:
+        :param target:  Параметр что бы указать куда переходить назад
+        :param user_id: id пользователя
+        :param action: Не обязательный параметр, он необходим если в callback_data есть подзапрос для вкладки
+        :param page: текущая страница пагинации
+        :return:
+        """
+        orders_count = len(orders)
+
+        prev_page: int
+        next_page: int
+
+        if page == 0:
+            prev_page = orders_count - 1
+            next_page = page + 1
+        elif page == orders_count - 1:
+            prev_page = page - 1
+            next_page = 0
+        else:
+            prev_page = page - 1
+            next_page = page + 1
+
+        user_id = orders[page].user_id
+
+        back_ikb = InlineKeyboardButton("◀️ Назад",
+                                        callback_data=user_cb.new("User", "get_User", 0, 0, user_id))
+        prev_page_ikb = InlineKeyboardButton("←", callback_data=user_cb.new(target, action, 0, prev_page, user_id))
+        check = InlineKeyboardButton("☰", callback_data=user_cb.new(target, burger_menu, 0, page, user_id))
+        page = InlineKeyboardButton(f"{str(page + 1)}/{str(orders_count)}",
+                                    callback_data=user_cb.new("", "", 0, 0, 0))
+        next_page_ikb = InlineKeyboardButton("→", callback_data=user_cb.new(target, action, 0, next_page, user_id))
+
+        if orders_count == 1:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        check
+                    ],
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+        else:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        prev_page_ikb,
+                        page, check,
+                        next_page_ikb,
+                    ],
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+
+    @staticmethod
+    async def check_Replenishment_ikb(target: str,
+                                     user_id: int,
+                                     page: int = 0,
+                                     action_back: str = None,
+                                     action_confirm: str = None) -> InlineKeyboardMarkup:
+        """
+        Клавиатура для взаимодействия с транзакцией пользователя
+        :param user_id: id Пользователя
+        :param page: не обходимо для того что бы возвращаться к определенной странице
+        :param action_back: не обходимо для того что бы возвращаться на определеную страницу
+        :param action_confirm: не обходимо для того что бы возвращаться на определеную страницу
+        :return:
+        """
+
+        user = await CRUDUsers.get(id=user_id)
+        chat = await bot.get_chat(chat_id=user.user_id)
+        button_url = chat.user_url
+
+        data = {
+            "✅ Пополнить кошелек": {
+                "target": target,
+                "action": action_confirm,
+                "pagination": "get_ApproveCheck",
+                "id": user_id,
+                "editid": page
+            },
+
+            "◀️ Назад": {
+                "target": target, "action": action_back, "pagination": "", "id": page, "editid": user_id},
+        }
+
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                                [
+                                    InlineKeyboardButton(text="📲 Связаться", url=button_url)
+                                ]
+
+                            ] + [
+                                [
+                                    InlineKeyboardButton(text=name, callback_data=user_cb.new(name_items["target"],
+                                                                                              name_items["action"],
+                                                                                              name_items["pagination"],
+                                                                                              name_items["id"],
+                                                                                              name_items["editid"])
+                                                         )
+                                ] for name, name_items in data.items()
+                            ]
+        )
 
     @staticmethod
     async def process_admin_profile(callback: CallbackQuery = None, message: Message = None,
@@ -609,7 +734,6 @@ class Users:
                                                              reply_markup=await Users.users_ikb()
                                                              )
                             await state.finish()
-
 
                     # Пагинация
                     elif data.get("action") == "get_Approved_pagination":
@@ -893,6 +1017,141 @@ class Users:
                             print(e)
                             await callback.message.edit_text(text="Админ панель",
                                                              reply_markup=await AdminForm.start_ikb())
+
+                elif data.get('target') == "Replenishment":
+                    if data.get('action') == "get_Replenishment":
+                        try:
+                            replenishment = list(filter(lambda x: x.operation_id == 3, await CRUDTransaction.get_all()))
+                            user = await CRUDUsers.get(id=replenishment[0].user_id)
+                            if replenishment:
+                                currency = await CRUDCurrency.get(currency_id=replenishment[0].currency_id)
+                                approved = "✅ одобрена ✅" if replenishment[0].approved else "❌ не одобрена ❌"
+
+                                text = f"🤝 Сделка № {replenishment[0].id} {approved}\n\n" \
+                                       f"📈 Курс покупки: <i>{replenishment[0].exchange_rate}\n</i>" \
+                                       f"   ₿  Желает пополнить кошелек BTC на: <i>{replenishment[0].buy_BTC}\n</i>" \
+                                       f"💸 Нужно отправить {currency.name}: <i>{replenishment[0].sale}\n</i>" \
+                                       f"👛 Кошелек <i>{replenishment[0].wallet}</i>"
+
+                                await callback.message.edit_text(text="<i>Пополнить кошелек пользователя "
+                                                                      f"{user.user_id}</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=
+                                                                 await Users.pagination_Replenishment_ikb(
+                                                                     target="Replenishment",
+                                                                     action="pagination_Replenishment",
+                                                                     burger_menu="get_check_Replenishment",
+                                                                     orders=replenishment),
+                                                                 parse_mode="HTML"
+                                                                 )
+                                await state.finish()
+                            else:
+                                await callback.message.edit_text(text="Пользователей не найдено",
+                                                                 reply_markup=await Users.users_ikb()
+                                                                 )
+                                await state.finish()
+                        except Exception as e:
+                            print(e)
+                            await callback.message.edit_text(text="НУ я же сказал, что нету пользователей!",
+                                                             reply_markup=await Users.users_ikb()
+                                                             )
+                            await state.finish()
+
+                    elif data.get('action') == "pagination_Replenishment":
+                        page = int(data.get('id'))
+
+                        replenishment = list(filter(lambda x: x.operation_id == 3, await CRUDTransaction.get_all()))
+                        currency = await CRUDCurrency.get(currency_id=replenishment[page].currency_id)
+                        user = await CRUDUsers.get(id=replenishment[page].user_id)
+                        if replenishment:
+                            approved = "✅ одобрена ✅" if replenishment[page].approved else "❌ не одобрена ❌"
+
+                            text = f"🤝 Сделка № {replenishment[page].id} {approved}\n\n" \
+                                   f"📈 Курс покупки: <i>{replenishment[page].exchange_rate}\n</i>" \
+                                   f"   ₿  Желает пополнить кошелек BTC на: <i>{replenishment[page].buy_BTC}\n</i>" \
+                                   f"💸 Нужно отправить {currency.name}: <i>{replenishment[page].sale}\n</i>" \
+                                   f"👛 Кошелек <i>{replenishment[page].wallet}</i>"
+
+                            try:
+                                await callback.message.edit_text(text=f"<i>Пополнить кошелек пользователя "
+                                                                      f"{user.user_id}</i>\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=
+                                                                 await Users.pagination_transaction_all_users_ikb(
+                                                                     page=page,
+                                                                     target="Replenishment",
+                                                                     action="pagination_Replenishment",
+                                                                     burger_menu="get_check_Replenishment",
+                                                                     orders=replenishment,
+                                                                 ),
+                                                                 parse_mode="HTML"
+                                                                 )
+                            except BadRequest:
+                                await callback.message.delete()
+                                await callback.message.answer(text=f"<i>Сделки Пользователя</i>\n\n"
+                                                                   f"{text}",
+                                                              reply_markup=
+                                                              await Users.pagination_transaction_all_users_ikb(
+                                                                  page=page,
+                                                                  target="Replenishment",
+                                                                  action="pagination_Replenishment",
+                                                                  burger_menu="get_check_Replenishment",
+                                                                  orders=replenishment),
+                                                              parse_mode="HTML"
+                                                              )
+
+                    elif data.get('action') == "get_check_Replenishment":
+                        page = int(data.get('id'))
+                        get_user_id = int(data.get('editId'))
+
+                        user = await CRUDUsers.get(id=get_user_id)
+                        replenishment = list(filter(lambda x: x.operation_id == 3, await CRUDTransaction.get_all()))
+
+                        if replenishment:
+                            approved = "✅ одобрена ✅" if replenishment[page].approved else "❌ не одобрена ❌"
+                            currency = await CRUDCurrency.get(currency_id=replenishment[page].currency_id)
+
+                            text = f"🤝 Сделка № {replenishment[page].id} {approved}\n\n" \
+                                   f"📈 Курс покупки: <i>{replenishment[page].exchange_rate}\n</i>" \
+                                   f"   ₿  Куплено BTC: <i>{replenishment[page].buy_BTC}\n</i>" \
+                                   f"💸 Продано {currency.name}: <i>{replenishment[page].sale}\n</i>" \
+                                   f"👛 Кошелек <i>{replenishment[page].wallet}</i>"
+
+                            await state.update_data(id=get_user_id)
+                            await state.update_data(editId=page)
+
+                            if replenishment[page].check != "None":
+                                try:
+                                    await callback.message.delete()
+                                    photo = open(f'user_check/{replenishment[page].check}.jpg', 'rb')
+                                    await bot.send_photo(chat_id=callback.from_user.id, photo=photo,
+                                                         caption=f"<i>Сделка пользователя</i>\n\n"
+                                                                 f"{text}",
+                                                         reply_markup=await Users.check_Replenishment_ikb(
+                                                             page=page,
+                                                             user_id=user.id,
+                                                             target="Replenishment",
+                                                             action_back="pagination_Replenishment",
+                                                             action_confirm="get_ConfirmPayment")
+                                                         )
+                                except FileNotFoundError:
+                                    pass
+                            else:
+                                await callback.message.edit_text(text=f"<i>Сделка пользователя</i>\n\n"
+                                                                      f"Пользователь не добавил чек\n\n"
+                                                                      f"{text}",
+                                                                 reply_markup=await Users.check_Replenishment_ikb(
+                                                                     page=page,
+                                                                     user_id=user.id,
+                                                                     target="UsersApproved",
+                                                                     action_back="get_Approved_pagination",
+                                                                     action_confirm="get_ConfirmPayment")
+                                                                 )
+                        else:
+                            await callback.message.edit_text(text="Не найдено",
+                                                             reply_markup=await Users.back_ikb(target="Users",
+                                                                                               action="get_Users")
+                                                             )
 
         if message:
             try:
