@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
-from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
+from crud import CRUDUsers, CRUDTransaction, CRUDCurrency, CRUDOperation
 from handlers.users.AllCallbacks import admin_cb
 from loader import bot
 from states.admins.AdminState import AdminState
@@ -253,16 +253,20 @@ class AdminForm:
                         wallet = []
                         date_created = []
                         currency_id = []
+                        operation_id = []
                         for transaction in transactions:
                             user = await CRUDUsers.get(id=transaction.user_id)
+                            currency = await CRUDCurrency.get(currency_id=int(transaction.currency_id))
+                            operation = await CRUDOperation.get(operation_id=int(transaction.operation_id))
                             user_id.append(user.user_id)
                             exchange_rate.append(transaction.exchange_rate)
                             sale.append(transaction.sale)
-                            currency = await CRUDCurrency.get(currency_id=int(transaction.currency_id))
+
                             currency_id.append(currency.name)
                             wallet.append(transaction.wallet)
                             date_created.append(transaction.date_created)
                             buy_BTC.append(transaction.buy_BTC)
+                            operation_id.append(operation.name)
 
                         df = pd.DataFrame({
                             'user_id': user_id,
@@ -271,7 +275,8 @@ class AdminForm:
                             'Продано': sale,
                             'Валюта': currency_id,
                             'кошелек': wallet,
-                            'Дата сделки': date_created
+                            'Дата сделки': date_created,
+                            'Операция': operation_id
                         })
                         df.to_excel('Отчет.xlsx')
 

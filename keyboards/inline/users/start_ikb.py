@@ -1131,6 +1131,7 @@ class MainForm:
                             user = await CRUDUsers.get(user_id=message.from_user.id)
 
                             transaction = await CRUDTransaction.add(transaction=TransactionSchema(user_id=user.id,
+                                                                                                  operation_id=1,
                                                                                                   **get_data)
                                                                     )
 

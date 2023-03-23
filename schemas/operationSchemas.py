@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
 
 
-class CurrencySchema(BaseModel):
+class OperationSchema(BaseModel):
     name: str
 
 
-class CurrencyInDBSchema(CurrencySchema):
+class OperationInDBSchema(OperationSchema):
     id: int = Field(ge=1)

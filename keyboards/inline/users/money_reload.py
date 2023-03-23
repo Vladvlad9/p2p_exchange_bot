@@ -16,6 +16,39 @@ from states.users.ReloadState import ReloadState
 
 
 class Money_reload:
+
+    @staticmethod
+    async def start_ikb(user_id: int) -> InlineKeyboardMarkup:
+        """
+        Клавиатура главного меню
+        :param user_id: id пользователя
+        :return:
+        """
+        data = {
+            "BYN 🇧🇾": {"target": "Pay", "action": "EnterAmount", "id": "BYN", "editid": user_id},
+            "RUB 🇷🇺": {"target": "Pay", "action": "EnterAmount", "id": "RUB", "editid": user_id},
+            "BTC ₿": {"target": "Pay", "action": "get_SellBTC", "id": 0, "editid": user_id},
+        }
+
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                                [
+                                    InlineKeyboardButton(text="💻 Профиль",
+                                                         callback_data=main_cb.new("Profile", "get_Profile", 0,
+                                                                                   user_id)
+                                                         )
+                                ]
+                            ] + [
+                                [
+                                    InlineKeyboardButton(text=name, callback_data=main_cb.new(name_items["target"],
+                                                                                              name_items["action"],
+                                                                                              name_items["id"],
+                                                                                              name_items["editid"]))
+                                    for name, name_items in data.items()
+                                ]
+                            ]
+        )
+
     @staticmethod
     async def isfloat(value: str):
         try:
@@ -37,7 +70,7 @@ class Money_reload:
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, action, page, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=money_cb.new(target, action, page, user_id))
                 ]
             ]
         )
@@ -65,7 +98,7 @@ class Money_reload:
                     for name, name_items in data.items()
                 ],
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, actionBack, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=money_cb.new("Pay", "get_reenter", 0, user_id))
                 ]
             ]
         )
@@ -115,11 +148,14 @@ class Money_reload:
                         await callback.message.answer(text="Введите количество BTC которое хотите купить",
                                                       reply_markup=await Money_reload.back_ikb(
                                                           user_id=callback.from_user.id,
-                                                          target="Profile",
-                                                          action="get_userWallet",
+                                                          target="Pay",
+                                                          action="get_reenter",
                                                           page=0)
                                                       )
                         await ReloadState.ReloadMoney.set()
+
+                    elif data.get('action') == "Profile":
+                        pass
 
                 if data.get('target') == "Pay":
                     if data.get('action') == "get_Currency":
@@ -156,10 +192,10 @@ class Money_reload:
                                                              reply_markup=await Money_reload.CheckOut_wallet_ikb())
                         except KeyError as e:
                             print(e)
-                            # await callback.message.edit_text(text="У вас вышло время на оплату",
-                            #                                  reply_markup=await MainForm.start_ikb(
-                            #                                      user_id=callback.from_user.id)
-                            #                                  )
+                            await callback.message.edit_text(text="У вас вышло время на оплату",
+                                                             reply_markup=await Money_reload.start_ikb(
+                                                                 user_id=callback.from_user.id)
+                                                             )
                             await callback.message.delete()
 
                     elif data.get('action') == "get_requisites":
@@ -193,10 +229,26 @@ class Money_reload:
                         except Exception as e:
                             print(e)
                             await callback.message.delete()
-                            # await callback.message.edit_text(text="У вас вышло время на оплату",
-                            #                                  reply_markup=await MainForm.start_ikb(
-                            #                                      user_id=callback.from_user.id)
-                            #                                  )
+                            await callback.message.edit_text(text="У вас вышло время на оплату",
+                                                             reply_markup=await Money_reload.start_ikb(
+                                                                 user_id=callback.from_user.id)
+                                                             )
+
+                    elif data.get('action') == "get_reenter":
+                        await state.finish()
+                        await callback.message.edit_text(text="Сделака отменена!\n"
+                                                              "Инструкция:\n"
+                                                              "1. Выберите валюту в которой будем считать\n"
+                                                              "2. Введите сумму (в Сообщении) \n"
+                                                              "3. Прочитайте и нажмите кнопку  ОПЛАТИТЬ✅ \n"
+                                                              "4. После оплаты нажмите кнопку Я ОПЛАТИЛ✅\n"
+                                                              "5. Загрузите изображение подтверждающее оплату\n"
+                                                              "6. Введите адрес bitcoin кошелька (в Сообщении)\n"
+                                                              "7. Проверьте ваши данные и подтвердите их\n"
+                                                              "Выберите валюту в которой будем считать:",
+                                                         reply_markup=await Money_reload.start_ikb(
+                                                             user_id=callback.from_user.id
+                                                         ))
 
                 # Загрузка картинки с потввержением об оплате
                 elif data.get("target") == "UserPaid":
@@ -309,7 +361,7 @@ class Money_reload:
                                 print(e)
 
                                 await message.answer(text="У вас вышло время на оплату",
-                                                     reply_markup=await MainForm.start_ikb(user_id=message.from_user.id)
+                                                     reply_markup=await Money_reload.start_ikb(user_id=message.from_user.id)
                                                      )
                             await state.finish()
                     else:
