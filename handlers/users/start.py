@@ -23,7 +23,7 @@ async def registration_start_state(message: types.Message, state: FSMContext):
     user = await CRUDUsers.get(user_id=message.from_user.id)
     if user:
         await message.delete()
-        await message.answer(text="СДЕЛКА ОТМЕНЕНА\n"
+        await message.answer(text="СДЕЛКА ОТМЕНЕНА \n"
                                   f"{CONFIGTEXT.MAIN_FORM.TEXT}",
                              reply_markup=await MainForm.start_ikb(message.from_user.id))
     else:

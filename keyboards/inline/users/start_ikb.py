@@ -884,7 +884,7 @@ class MainForm:
                             price = round(Decimal(rub) * Decimal(usd), 3)
                             text = "Купить BTC за RUB\n" \
                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
-                                   f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB} RUB</i>"
+                                   f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB}  RUB</i>"
 
                         await state.update_data(currency=currency)
                         await callback.message.edit_text(text=f"{text}\n\n"
