@@ -17,3 +17,10 @@ class AdminState(StatesGroup):
     Timer = State()
 
     Verification = State()
+
+    FIRST_PAGE = State()
+    MAIN_FORM = State()
+    Requisites = State()
+
+    MinBYN = State()
+    MinRUB = State()

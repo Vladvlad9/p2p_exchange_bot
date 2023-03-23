@@ -11,7 +11,9 @@
 
   "COMMISSION": {
     "COMMISSION_BOT": 3,
-    "COMMISSION_REFERRAL": 1
+    "COMMISSION_REFERRAL": 1,
+    "MIN_BYN": 50,
+    "MIN_RUB": 1000
   },
 
   "DATABASE": "postgres:postgres@localhost:5432/exchange",

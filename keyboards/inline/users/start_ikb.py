@@ -3,11 +3,10 @@ import asyncio
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
-from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BadRequest
-from aiogram.utils import exceptions
 
 from config import CONFIG
+from config.config import CONFIGTEXT
 from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from crud.referralCRUD import CRUDReferral
 from crud.verificationCRUD import CRUDVerification
@@ -20,7 +19,6 @@ from schemas import TransactionSchema, WalletSchema, VerificationSchema
 from states.users.MainState import MainState
 
 from decimal import Decimal
-from states.users.TransferMoneyState import TransferMoneyState
 
 
 class MainForm:
@@ -30,15 +28,7 @@ class MainForm:
         await state.finish()
         await bot.send_message(chat_id=chat_id,
                                text='Время вышло!\n'
-                                    "Инструкция:\n"
-                                    "1. Выберите валюту в которой будем считать\n"
-                                    "2. Введите сумму (в Сообщении) \n"
-                                    "3. Прочитайте и нажмите кнопку  ОПЛАТИТЬ✅ \n"
-                                    "4. После оплаты нажмите кнопку Я ОПЛАТИЛ✅\n"
-                                    "5. Загрузите изображение подтверждающее оплату\n"
-                                    "6. Введите адрес bitcoin кошелька (в Сообщении)\n"
-                                    "7. Проверьте ваши данные и подтвердите их\n"
-                                    "Выберите валюту в которой будем считать:",
+                                    f'{CONFIGTEXT.MAIN_FORM.TEXT}',
                                reply_markup=await MainForm.start_ikb(chat_id))
 
     @staticmethod
@@ -593,15 +583,7 @@ class MainForm:
                     if data.get("action") == "get_MainForm":
                         await state.finish()
                         await callback.message.delete()
-                        await callback.message.answer(text="Инструкция:\n"
-                                                           "1. Выберите валюту в которой будем считать\n"
-                                                           "2. Введите сумму (в Сообщении) \n"
-                                                           "3. Прочитайте и нажмите кнопку  ОПЛАТИТЬ✅ \n"
-                                                           "4. После оплаты нажмите кнопку Я ОПЛАТИЛ✅\n"
-                                                           "5. Загрузите изображение подтверждающее оплату\n"
-                                                           "6. Введите адрес bitcoin кошелька (в Сообщении)\n"
-                                                           "7. Проверьте ваши данные и подтвердите их\n"
-                                                           "Выберите валюту в которой будем считать:",
+                        await callback.message.answer(text=CONFIGTEXT.MAIN_FORM.TEXT,
                                                       reply_markup=await MainForm.start_ikb(
                                                           user_id=callback.from_user.id)
                                                       )
@@ -894,7 +876,7 @@ class MainForm:
                             price = round(Decimal(byn) * Decimal(usd), 3)
                             text = "Купить BTC за BYN\n" \
                                    f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
-                                   f"<i>Мин. сумма 50 BYN</i>"
+                                   f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_BYN} BYN</i>"
                         else:
                             #price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
@@ -902,7 +884,7 @@ class MainForm:
                             price = round(Decimal(rub) * Decimal(usd), 3)
                             text = "Купить BTC за RUB\n" \
                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
-                                   f"<i>Мин. сумма 1000 RUB</i>"
+                                   f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB} RUB</i>"
 
                         await state.update_data(currency=currency)
                         await callback.message.edit_text(text=f"{text}\n\n"
@@ -1048,27 +1030,11 @@ class MainForm:
                         try:
                             wallet = await state.get_data()
 
-                            text = "🧾РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ\n" \
-                                   "        🏧💳💵\n" \
-                                   "- СИСТЕМА ЕРИП ПЛАТЕЖИ\n" \
-                                   "1. ЕРИП\n" \
-                                   "2. БАНКОВСКИЕ ФИНАНСОВЫЕ \n" \
-                                   "УСЛУГИ\n" \
-                                   "3. БАНК НКФО\n" \
-                                   "4. МТБАНК\n" \
-                                   "5. ПОПОЛНЕНИЕ ДЕБЕТОВОЙ КАРТЫ\n" \
-                                   "6. Р/СЧЁТ       32271867\n" \
-                                   "7. ПОСЛЕ ПЕРЕВОДА СРЕДСТВ \n" \
-                                   "НАЖИМАЕМ КНОПКУ \n" \
-                                   "🏧🏧🏧Я Оплатил 🏧🏧🏧\n" \
-                                   "8. ПРИСЫЛАЕМ ЧЕК \n" \
-                                   "9. 🧾🧾  ЧЕК ОБЯЗАТЕЛЕН 🧾🧾\n"
-
                             text_wallet = f"🚀 На Ваш кошелек  ➡️➡️➡️ <i>{wallet['wallet']}</i>\n" \
                                           f"будет отправлено <i>{wallet['buy_BTC']}</i> BTC. 🚀"
 
                             await callback.message.edit_text(text=f"{text_wallet}\n\n"
-                                                                  f"{text}",
+                                                                  f"{CONFIGTEXT.Requisites.TEXT}",
                                                              reply_markup=await MainForm.user_paid_ikb(),
                                                              parse_mode="HTML"
                                                              )
@@ -1251,13 +1217,13 @@ class MainForm:
                         if currency["currency"] == "BYN":
                             await MainForm.buying_currency(money=message.text,
                                                            currency=currency["currency"],
-                                                           limit=50,
+                                                           limit=CONFIG.COMMISSION.MIN_BYN,
                                                            message=message,
                                                            state=state)
                         else:
                             await MainForm.buying_currency(money=message.text,
                                                            currency=currency["currency"],
-                                                           limit=1000,
+                                                           limit=CONFIG.COMMISSION.MIN_RUB,
                                                            message=message,
                                                            state=state)
 

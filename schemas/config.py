@@ -14,6 +14,8 @@ class PaymentSchema(BaseModel):
 class CommissionSchema(BaseModel):
     COMMISSION_BOT: int
     COMMISSION_REFERRAL: int
+    MIN_BYN: int
+    MIN_RUB: int
 
 
 class CoinbaseSchema(BaseModel):
