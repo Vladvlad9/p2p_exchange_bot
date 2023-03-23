@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class UserSchema(BaseModel):
     user_id: int = Field(ge=1)
     date_created:  datetime = Field(default=datetime.now())
-    verification_id: int
+    verification_id: int = Field(default=0)
 
 
 class UserInDBSchema(UserSchema):

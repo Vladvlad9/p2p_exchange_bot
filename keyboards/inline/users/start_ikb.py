@@ -590,6 +590,7 @@ class MainForm:
                 # Главное меню
                 if data.get("target") == "MainForm":
                     if data.get("action") == "get_MainForm":
+                        await state.finish()
                         await callback.message.delete()
                         await callback.message.answer(text="Инструкция:\n"
                                                            "1. Выберите валюту в которой будем считать\n"
