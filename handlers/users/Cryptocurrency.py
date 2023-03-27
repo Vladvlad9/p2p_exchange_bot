@@ -5,12 +5,13 @@ from config import CONFIG
 from fake_useragent import UserAgent
 import urllib
 from datetime import datetime
+import xml.etree.ElementTree as ET
 
 
 class Cryptocurrency:
 
     @staticmethod
-    async def get_usd():
+    async def get_byn():
         get_request = requests.get(url="https://www.nbrb.by/api/exrates/rates/431")
         try:
             if get_request.status_code == 200:
@@ -24,6 +25,25 @@ class Cryptocurrency:
 
     @staticmethod
     async def get_rub():
+        try:
+            current_datetime = datetime.now()
+            month = current_datetime.month
+
+            if month < 10:
+                month = f"0{current_datetime.month}"
+
+            url = f"https://www.cbr.ru/scripts/XML_daily.asp?date_req={current_datetime.day}/" \
+                  f"{month}/{current_datetime.year}"
+
+            result = float(ET.fromstring(requests.get(url).text).find(
+                './Valute[CharCode="USD"]/Value').text.replace(',', '.')
+                           )
+            return result
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    async def get_rub1():
         current_datetime = datetime.now()
         month = current_datetime.month
 
@@ -66,6 +86,18 @@ class Cryptocurrency:
                 print(get_request.status_code)
         except Exception as e:
             print(e)
+
+    @staticmethod
+    async def get_update_currency(currency: str) -> float:
+        get_usd = await Cryptocurrency.get_Cryptocurrency("USD")
+        if currency == 'BYN':
+            get_byn = await Cryptocurrency.get_byn()
+            byn = float(Decimal(get_byn) * Decimal(get_usd))
+            return byn
+        else:
+            get_rub = await Cryptocurrency.get_rub()
+            rub = float(Decimal(get_rub) * Decimal(get_usd))
+            return rub
 
     @staticmethod
     async def get_Cryptocurrency(currency: str) -> float:

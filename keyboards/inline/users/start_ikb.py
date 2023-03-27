@@ -65,7 +65,7 @@ class MainForm:
                                       f"Введите сумму в {currency}")
             await MainState.UserCoin.set()
         else:
-            price_BTC = await Cryptocurrency.get_Cryptocurrency(currency)
+            price_BTC = await Cryptocurrency.get_update_currency(currency)
             bye = round(int(user_money) / price_BTC, 8)
 
             currency = await CRUDCurrency.get(currency_name=currency)
@@ -77,8 +77,8 @@ class MainForm:
 
             if get_referral:
                 current_bye = round(Decimal(bye) - Decimal(percent) - Decimal(percent_referral), 8)
-                referral_txt = f"{CONFIG.COMMISSION.COMMISSION_REFERRAL}% от {bye} составит = {percent_referral} BTC\n" \
-                               f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                #f"{CONFIG.COMMISSION.COMMISSION_REFERRAL}% от {bye} составит = {percent_referral} BTC\n"
+                referral_txt = f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"Вы получите BTC: {current_bye}\n" \
                                f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"ПЕРЕЙТИ К ОПЛАТЕ?"
@@ -88,22 +88,21 @@ class MainForm:
                                f"Вы получите BTC: {current_bye}\n" \
                                f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"ПЕРЕЙТИ К ОПЛАТЕ?"
-
+            # f"{CONFIG.COMMISSION.COMMISSION_BOT}% от {bye} составит = {percent} BTC\n"
             text = f"💳 Купить криптовалюту: BTC за {currency.name}\n" \
-                   f"1 Bitcoin = {price_BTC} {currency.name}\n\n" \
+                   f"1 Bitcoin = {round(price_BTC)} {currency.name}\n\n" \
                    f"📢 Внимание!\n" \
                    f"Текущая цена покупки зафиксирована!\n" \
                    f"Нажав кнопку Купить ✅ " \
                    f"необходимо оплатить счет в течении ⏱{CONFIG.PAYMENT_TIMER / 60} минут!\n\n" \
-                   f"{user_money} {currency.name} = {bye} BTC\n" \
-                   f"{CONFIG.COMMISSION.COMMISSION_BOT}% от {bye} составит = {percent} BTC\n" \
+                   f"Вы должны заплатить {user_money} {currency.name}\n" \
                    f"{referral_txt}\n" \
 
             await message.answer(text=text,
                                  reply_markup=await MainForm.bue_ikb(
                                      user_id=message.from_user.id,
                                      count=bye,
-                                     target="BuyBTC")
+                                     target="MainForm")
                                  )
 
             await state.update_data(currency_id=currency.id)
@@ -116,15 +115,15 @@ class MainForm:
 
     @staticmethod
     async def buying_BTC(user_money, message, state):
-        price_BYN = await Cryptocurrency.get_usd()
+        price_BYN = await Cryptocurrency.get_byn()
         price_RUB = await Cryptocurrency.get_rub()
 
         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
 
-        bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 3)
-        bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 3)
+        bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
+        bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
 
-        text = f"📈 Текущая цена Bitcoin: {price_BTC}$\n" \
+        text = f"📈 Текущая цена Bitcoin: {round(price_BTC)}$\n" \
                f"📢 Внимание! Текущая цена покупки зафиксирована!\n" \
                f"Нажав кнопку ОПЛАТИТЬ✅ необходимо " \
                f"оплатить счет в течении ⏱{CONFIG.PAYMENT_TIMER / 60} минут!\n\n" \
@@ -135,8 +134,8 @@ class MainForm:
                f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                f"ПЕРЕЙТИ К ОПЛАТЕ?"
 
-        await state.update_data(exchange_RUB=bye_rub)
-        await state.update_data(exchange_BYN=bye_byn)
+        await state.update_data(exchange_RUB=float(Decimal(price_BTC) * Decimal(price_RUB)))
+        await state.update_data(exchange_BYN=float(Decimal(price_BTC) * Decimal(price_BYN)))
 
         await state.update_data(price_RUB=bye_rub)
         await state.update_data(price_BYN=bye_byn)
@@ -230,7 +229,7 @@ class MainForm:
                     InlineKeyboardButton(text="Я ОПЛАТИЛ ✅", callback_data=main_cb.new("UserPaid", 0, 0, 0))
                 ],
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new("Buy", "get_reenter", 0, 0))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new("MainForm", "get_MainForm", 0, 0))
                 ]
             ]
         )
@@ -260,7 +259,7 @@ class MainForm:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(text="Верно 👌", callback_data=main_cb.new("Buy", "get_requisites", 0, 0)),
-                    InlineKeyboardButton(text="Нет ⛔️", callback_data=main_cb.new("Buy", "get_reenter", 0, 0))
+                    InlineKeyboardButton(text="Нет ⛔️", callback_data=main_cb.new("MainForm", "get_MainForm", 0, 0))
                 ]
             ]
         )
@@ -294,8 +293,8 @@ class MainForm:
                 :return:
                 """
         data = {
-            "ОПЛАТИТЬ BYN 🇧🇾": {"target": "Pay", "action": "get_Currency", "id": "BYN", "editid": user_id},
-            "ОПЛАТИТЬ RUB 🇷🇺": {"target": "Pay", "action": "get_Currency", "id": "RUB", "editid": user_id},
+            "ОПЛАТИТЬ BYN 🇧🇾": {"target": "Buy", "action": "SelectUserWallet", "id": "BYN", "editid": user_id},
+            "ОПЛАТИТЬ RUB 🇷🇺": {"target": "Buy", "action": "SelectUserWallet", "id": "RUB", "editid": user_id},
         }
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -350,7 +349,7 @@ class MainForm:
                     InlineKeyboardButton(text="Купить ✅", callback_data=main_cb.new("Buy", "SelectUserWalletBTC", count, user_id))
                 ],
                 [
-                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, 0, 0, user_id))
+                    InlineKeyboardButton(text="◀️ Назад", callback_data=main_cb.new(target, "get_MainForm", 0, user_id))
                 ]
             ]
         )
@@ -871,9 +870,9 @@ class MainForm:
 
                         if currency == "BYN":
                             #price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
-                            byn = await Cryptocurrency.get_usd()
+                            byn = await Cryptocurrency.get_byn()
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
-                            price = round(Decimal(byn) * Decimal(usd), 3)
+                            price = round(Decimal(byn) * Decimal(usd))
                             text = "Купить BTC за BYN\n" \
                                    f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
                                    f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_BYN} BYN</i>"
@@ -881,7 +880,7 @@ class MainForm:
                             #price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
                             rub = await Cryptocurrency.get_rub()
-                            price = round(Decimal(rub) * Decimal(usd), 3)
+                            price = round(Decimal(rub) * Decimal(usd))
                             text = "Купить BTC за RUB\n" \
                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
                                    f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB}  RUB</i>"
@@ -907,31 +906,31 @@ class MainForm:
                                                          )
                         await MainState.ByeBTC.set()
 
-                    # Покупка BTC за BYN or RUB
-                    elif data.get('action') == "get_Currency":
-                        currency = data.get("id")
-                        currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
-                        get_data_buy = await state.get_data()
-                        if currency == "BYN":
-                            get_currency = await CRUDCurrency.get(currency_id=1)
-                            await state.update_data(exchange_rate=get_data_buy['exchange_BYN'])
-                            await state.update_data(sale=get_data_buy['price_BYN'])
-                            await state.update_data(currency_id=get_currency.id)
-                            await state.update_data(currency=get_currency.name)
-                        else:
-                            get_currency = await CRUDCurrency.get(currency_id=2)
-                            await state.update_data(exchange_rate=get_data_buy['exchange_RUB'])
-                            await state.update_data(sale=get_data_buy['price_RUB'])
-                            await state.update_data(currency_id=get_currency.id)
-                            await state.update_data(currency=get_currency.name)
-
-                        data_bye = await state.get_data()
-                        await callback.message.edit_text(text="🔐 Используйте встроенный 🔐:\n\n"
-                                                              f"Покупка - {data_bye['buy_BTC']} BTC",
-                                                         reply_markup=await MainForm.wallet_ikb(
-                                                             user_id=callback.from_user.id,
-                                                             target="BuyBTC", action="SelectUserWalletBTC")
-                                                         )
+                    # # Покупка BTC за BYN or RUB
+                    # elif data.get('action') == "get_Currency":
+                    #     currency = data.get("id")
+                    #     currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
+                    #     get_data_buy = await state.get_data()
+                    #     if currency == "BYN":
+                    #         get_currency = await CRUDCurrency.get(currency_id=1)
+                    #         await state.update_data(exchange_rate=get_data_buy['exchange_BYN'])
+                    #         await state.update_data(sale=get_data_buy['price_BYN'])
+                    #         await state.update_data(currency_id=get_currency.id)
+                    #         await state.update_data(currency=get_currency.name)
+                    #     else:
+                    #         get_currency = await CRUDCurrency.get(currency_id=2)
+                    #         await state.update_data(exchange_rate=get_data_buy['exchange_RUB'])
+                    #         await state.update_data(sale=get_data_buy['price_RUB'])
+                    #         await state.update_data(currency_id=get_currency.id)
+                    #         await state.update_data(currency=get_currency.name)
+                    #
+                    #     data_bye = await state.get_data()
+                    #     await callback.message.edit_text(text="🔐 Используйте встроенный 🔐:\n\n"
+                    #                                           f"Покупка - {data_bye['buy_BTC']} BTC",
+                    #                                      reply_markup=await MainForm.wallet_ikb(
+                    #                                          user_id=callback.from_user.id,
+                    #                                          target="BuyBTC", action="SelectUserWalletBTC")
+                    #                                      )
 
                 # Меню ввода кошелька
                 elif data.get("target") == "Buy":
@@ -983,6 +982,7 @@ class MainForm:
                                                                  reply_markup=await MainForm.start_ikb(
                                                                      user_id=callback.from_user.id)
                                                                  )
+                                await state.finish()
                                 await callback.message.delete()
 
                         else:
@@ -993,6 +993,7 @@ class MainForm:
                                                              parse_mode="HTML"
                                                              )
 
+                    # BTC
                     elif data.get('action') == "SelectUserWallet":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         get_wallet = await CRUDWallet.get(user_id=user.id)
@@ -1000,6 +1001,22 @@ class MainForm:
 
                         if check_wallet:
                             try:
+                                currency = data.get("id")
+                                currency_txt = "BYN 🇧🇾" if currency == "BYN" else "RUB 🇷🇺"
+                                get_data_buy = await state.get_data()
+                                if currency == "BYN":
+                                    get_currency = await CRUDCurrency.get(currency_id=1)
+                                    await state.update_data(exchange_rate=get_data_buy['exchange_BYN'])
+                                    await state.update_data(sale=get_data_buy['price_BYN'])
+                                    await state.update_data(currency_id=get_currency.id)
+                                    await state.update_data(currency=get_currency.name)
+                                else:
+                                    get_currency = await CRUDCurrency.get(currency_id=2)
+                                    await state.update_data(exchange_rate=get_data_buy['exchange_RUB'])
+                                    await state.update_data(sale=get_data_buy['price_RUB'])
+                                    await state.update_data(currency_id=get_currency.id)
+                                    await state.update_data(currency=get_currency.name)
+
                                 get_btc = await state.get_data()
                                 text = f"Отправляем BTC {get_btc['buy_BTC']} ➡️➡️➡\n\n" \
                                        f"Адрес кошелька: {get_wallet.address}\n\n" \
@@ -1016,6 +1033,7 @@ class MainForm:
                                                                  reply_markup=await MainForm.start_ikb(
                                                                      user_id=callback.from_user.id)
                                                                  )
+                                await state.finish()
                                 await callback.message.delete()
 
                         else:
@@ -1032,15 +1050,22 @@ class MainForm:
 
                             text_wallet = f"🚀 На Ваш кошелек  ➡️➡️➡️ <i>{wallet['wallet']}</i>\n" \
                                           f"будет отправлено <i>{wallet['buy_BTC']}</i> BTC. 🚀"
-
-                            await callback.message.edit_text(text=f"{text_wallet}\n\n"
-                                                                  f"{CONFIGTEXT.Requisites.TEXT}",
-                                                             reply_markup=await MainForm.user_paid_ikb(),
-                                                             parse_mode="HTML"
-                                                             )
+                            if wallet['currency'] == "BYN":
+                                await callback.message.edit_text(text=f"{text_wallet}\n\n"
+                                                                      f"{CONFIGTEXT.RequisitesBYN.TEXT}",
+                                                                 reply_markup=await MainForm.user_paid_ikb(),
+                                                                 parse_mode="HTML"
+                                                                 )
+                            else:
+                                await callback.message.edit_text(text=f"{text_wallet}\n\n"
+                                                                      f"{CONFIGTEXT.RequisitesRUS.TEXT}",
+                                                                 reply_markup=await MainForm.user_paid_ikb(),
+                                                                 parse_mode="HTML"
+                                                                 )
                         except Exception as e:
                             print(e)
                             await callback.message.delete()
+                            await state.finish()
                             await callback.message.edit_text(text="У вас вышло время на оплату",
                                                              reply_markup=await MainForm.start_ikb(
                                                                  user_id=callback.from_user.id)
@@ -1117,13 +1142,15 @@ class MainForm:
                                 await CRUDTransaction.update(transaction=get_transaction)
                                 if len(get_data) > 6:
                                     text = f"Заявка № {transaction.id}\n\n" \
-                                           f"Курс: {get_data['exchange_rate']} {get_data['currency']}\n" \
+                                           f"Имя: {message.from_user.first_name}\n" \
+                                           f"Курс: {round(get_data['exchange_rate'])} {get_data['currency']}\n" \
                                            f"Получено BTC: {get_data['buy_BTC']}\n" \
                                            f"Нужно отправить {get_data['currency']}: {get_data['sale']}\n" \
                                            f"Кошелёк: {get_data['wallet']}"
                                 else:
                                     text = f"Заявка № {transaction.id}\n\n" \
-                                           f"Курс: {get_data['exchange_rate']}\n" \
+                                           f"Имя {message.from_user.first_name}" \
+                                           f"Курс: {round(get_data['exchange_rate'])}\n" \
                                            f"Получено {get_data['currency']}: {get_data['sale']}\n" \
                                            f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
                                            f"Кошелёк: {get_data['wallet']}"

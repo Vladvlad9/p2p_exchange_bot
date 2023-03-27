@@ -16,4 +16,5 @@ class Requisites(BaseModel):
 class ConfigTextSchema(BaseModel):
     MAIN_FORM: MAIN_FORM
     FIRST_PAGE: FIRST_PAGE
-    Requisites: Requisites
+    RequisitesBYN: Requisites
+    RequisitesRUS: Requisites

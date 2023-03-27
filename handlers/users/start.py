@@ -98,12 +98,13 @@ async def registration_start(message: types.Message):
 async def test(message: types.Message):
     #price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
     #await CreateWallet.money_text()
-    a = await Cryptocurrency.get_rub()
-    b = await Cryptocurrency.get_Cryptocurrency("USD")
-    c = a * b
-    print('asd')
+    # a = await Cryptocurrency.get_rub()
+    # b = await Cryptocurrency.get_Cryptocurrency("USD")
+    # c = a * b
+    # print('asd')
     # await CreateWallet.money_text()
     # print('asd')
+    pass
 
 
 @dp.callback_query_handler(main_cb.filter())
