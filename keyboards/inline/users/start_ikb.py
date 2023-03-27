@@ -1149,7 +1149,7 @@ class MainForm:
                                            f"Кошелёк: {get_data['wallet']}"
                                 else:
                                     text = f"Заявка № {transaction.id}\n\n" \
-                                           f"Имя {message.from_user.first_name}" \
+                                           f"Имя {message.from_user.first_name}\n" \
                                            f"Курс: {round(get_data['exchange_rate'])}\n" \
                                            f"Получено {get_data['currency']}: {get_data['sale']}\n" \
                                            f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
@@ -1164,7 +1164,6 @@ class MainForm:
 
                             except Exception as e:
                                 print(e)
-
                                 await message.answer(text="У вас вышло время на оплату",
                                                      reply_markup=await MainForm.start_ikb(user_id=message.from_user.id)
                                                      )
