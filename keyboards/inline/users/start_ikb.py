@@ -145,8 +145,8 @@ class MainForm:
         await message.answer(text=text,
                              reply_markup=await MainForm.currency_ikb(
                                  user_id=message.from_user.id,
-                                 target="get_MainForm",
-                                 actionBack="MainForm")
+                                 target="MainForm",
+                                 actionBack="get_MainForm")
                              )
 
     @staticmethod
