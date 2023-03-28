@@ -46,15 +46,30 @@ async def registration_start(message: types.Message):
         if str(referral_id) != "":
             if str(referral_id) != str(message.from_user.id):
                 current_user = await CRUDUsers.get(user_id=int(referral_id))
-                await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
-                await CRUDReferral.add(referral=ReferralSchema(user_id=current_user.id,
-                                                               referral_id=int(referral_id))
-                                       )
-                try:
-                    await bot.send_message(chat_id=int(referral_id),
-                                           text="По вашей ссылке зарегистрировался новый пользователь!")
-                except Exception:
-                    pass
+                if current_user:
+                    await CRUDUsers.add(user=UserSchema(user_id=message.from_user.id))
+                    await CRUDReferral.add(referral=ReferralSchema(user_id=current_user.id,
+                                                                   referral_id=int(referral_id))
+                                           )
+                    try:
+                        await bot.send_message(chat_id=int(referral_id),
+                                               text="По вашей ссылке зарегистрировался новый пользователь!")
+                        get_wallet = await CreateWallet.create_wallet()
+                        if get_wallet:
+                            address = str(get_wallet['wallet']['address'])
+                            wif = str(get_wallet['wallet']['wif'])
+
+                            user = await CRUDUsers.get(user_id=message.from_user.id)
+
+                            await CRUDWallet.add(wallet=WalletSchema(user_id=user.id,
+                                                                     address=address,
+                                                                     wif=wif)
+                                                 )
+                            print('wallet added')
+                    except Exception:
+                        pass
+                else:
+                    await message.answer(text="Пользователя не найдено")
             else:
                 await message.answer(text="Нельзя регистрироваться по собственной реферальной ссылке!")
         else:
