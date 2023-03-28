@@ -83,7 +83,8 @@ class AdminForm:
         """
         data = {"При первом входе": {"target": "Text_change", "action": "FIRST_PAGE", "id": 0, "editid": 0},
                 "Главное меню": {"target": "Text_change", "action": "MAIN_FORM", "id": 0, "editid": 0},
-                "Реквизиты": {"target": "Text_change", "action": "Requisites", "id": 0, "editid": 0},
+                "Реквизиты BYN": {"target": "Text_change", "action": "RequisitesBYN", "id": 0, "editid": 0},
+                "Реквизиты RUS": {"target": "Text_change", "action": "RequisitesRUS", "id": 0, "editid": 0},
                 "◀️ Назад": {"target": "StartMenu", "action": "", "id": 0, "editid": 0},
                 }
         return InlineKeyboardMarkup(
@@ -217,11 +218,17 @@ class AdminForm:
                             action = "get_Сhange"
                             await AdminState.MAIN_FORM.set()
 
-                        elif get_change_data == "Requisites":
+                        elif get_change_data == "RequisitesBYN":
                             text = "Введите данные для реквизитов"
                             target = "Text_change"
                             action = "get_Сhange"
-                            await AdminState.Requisites.set()
+                            await AdminState.RequisitesBYN.set()
+
+                        elif get_change_data == "RequisitesRUS":
+                            text = "Введите данные для реквизитов"
+                            target = "Text_change"
+                            action = "get_Сhange"
+                            await AdminState.RequisitesRUS.set()
 
                         await callback.message.edit_text(text=text,
                                                          reply_markup=await AdminForm.back_ikb(target=target,
@@ -347,17 +354,30 @@ class AdminForm:
                     elif data.get("action") == "FIRST_PAGE":
                         await callback.message.edit_text(text=CONFIGTEXT.FIRST_PAGE.TEXT,
                                                          parse_mode="HTML",
-                                                         reply_markup=await AdminForm.change_ikb(get_change="FIRST_PAGE"))
+                                                         reply_markup=await AdminForm.change_ikb(
+                                                             get_change="FIRST_PAGE")
+                                                         )
 
                     elif data.get("action") == "MAIN_FORM":
                         await callback.message.edit_text(text=CONFIGTEXT.MAIN_FORM.TEXT,
                                                          parse_mode="HTML",
-                                                         reply_markup=await AdminForm.change_ikb(get_change="MAIN_FORM"))
+                                                         reply_markup=await AdminForm.change_ikb(
+                                                             get_change="MAIN_FORM")
+                                                         )
 
-                    elif data.get("action") == "Requisites":
-                        await callback.message.edit_text(text=CONFIGTEXT.Requisites.TEXT,
+                    elif data.get("action") == "RequisitesBYN":
+                        await callback.message.edit_text(text=CONFIGTEXT.RequisitesBYN.TEXT,
                                                          parse_mode="HTML",
-                                                         reply_markup=await AdminForm.change_ikb(get_change="Requisites"))
+                                                         reply_markup=await AdminForm.change_ikb(
+                                                             get_change="RequisitesBYN")
+                                                         )
+
+                    elif data.get("action") == "RequisitesRUS":
+                        await callback.message.edit_text(text=CONFIGTEXT.RequisitesRUS.TEXT,
+                                                         parse_mode="HTML",
+                                                         reply_markup=await AdminForm.change_ikb(
+                                                             get_change="RequisitesRUS")
+                                                         )
 
         if message:
             await message.delete()
@@ -486,8 +506,16 @@ class AdminForm:
                                          reply_markup=await AdminForm.Text_change_ikb())
                     await state.finish()
 
-                elif await state.get_state() == "AdminState:Requisites":
-                    CONFIGTEXT.Requisites.TEXT = message.text
+                elif await state.get_state() == "AdminState:RequisitesBYN":
+                    CONFIGTEXT.RequisitesBYN.TEXT = message.text
+                    await message.answer(text="Реквизиты изменены на\n"
+                                              f"{message.text}",
+                                         parse_mode="HTML",
+                                         reply_markup= await AdminForm.Text_change_ikb())
+                    await state.finish()
+
+                elif await state.get_state() == "AdminState:RequisitesRUS":
+                    CONFIGTEXT.RequisitesRUS.TEXT = message.text
                     await message.answer(text="Реквизиты изменены на\n"
                                               f"{message.text}",
                                          parse_mode="HTML",

@@ -20,7 +20,8 @@ class AdminState(StatesGroup):
 
     FIRST_PAGE = State()
     MAIN_FORM = State()
-    Requisites = State()
+    RequisitesRUS = State()
+    RequisitesBYN = State()
 
     MinBYN = State()
     MinRUB = State()
