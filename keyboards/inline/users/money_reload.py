@@ -273,7 +273,8 @@ class Money_reload:
                     get_float = await Money_reload.isfloat(message.text)
                     if get_float:
                         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
-                        rub = float(await Cryptocurrency.get_rub())
+                        #rub = float(await Cryptocurrency.get_rub())
+                        rub = float(await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB"))
                         usd_to_byn = await Cryptocurrency.get_byn()
                         user_coin = Decimal(message.text)
 

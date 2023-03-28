@@ -12,7 +12,12 @@ class Cryptocurrency:
 
     @staticmethod
     async def get_byn():
-        get_request = requests.get(url="https://www.nbrb.by/api/exrates/rates/431")
+        ua = UserAgent()
+        headers = {
+            'User-Agent': ua.random
+        }
+
+        get_request = requests.get(url="https://www.nbrb.by/api/exrates/rates/431", headers=headers)
         try:
             if get_request.status_code == 200:
                 data = get_request.json()
@@ -24,7 +29,11 @@ class Cryptocurrency:
             print(e)
 
     @staticmethod
-    async def get_rub():
+    async def get_rub1():
+        ua = UserAgent()
+        headers = {
+            'User-Agent': ua.random
+        }
         try:
             current_datetime = datetime.now()
             month = current_datetime.month
@@ -43,7 +52,12 @@ class Cryptocurrency:
             print(e)
 
     @staticmethod
-    async def get_rub1():
+    async def get_rub():
+        ua = UserAgent()
+        headers = {
+            'User-Agent': ua.random
+        }
+
         current_datetime = datetime.now()
         month = current_datetime.month
 
@@ -62,11 +76,15 @@ class Cryptocurrency:
                 data = requests.get(url)
                 xpars = xmltodict.parse(data.text)
                 price = xpars['ValCurs']['Valute'][13]['Value'].replace(',', '.')
-                return price
+                if price is None:
+                    await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+                else:
+                    return price
             else:
                 print(get_request.status_code)
+                return await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
         except Exception as e:
-            print(e)
+            await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
 
     @staticmethod
     async def get_CryptocurrencyBTC(currency: str) -> float:
@@ -95,9 +113,9 @@ class Cryptocurrency:
             byn = float(Decimal(get_byn) * Decimal(get_usd))
             return byn
         else:
-            get_rub = await Cryptocurrency.get_rub()
-            rub = float(Decimal(get_rub) * Decimal(get_usd))
-            return rub
+            #get_rub = await Cryptocurrency.get_rub()
+            #rub = float(Decimal(get_rub) * Decimal(get_usd))
+            return await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
 
     @staticmethod
     async def get_Cryptocurrency(currency: str) -> float:

@@ -36,6 +36,8 @@ class MainForm:
         await asyncio.sleep(10)
         await message.answer(text="Ваша заявка уже обрабатывается как только она будет "
                                   "выполнена мы вам сообщим.\n\n"
+                                  "Если вам не сообщили в течение 15 мин. Обратитесь к оператору. "
+                                  "Он быстро все решит.\n\n"
                                   "Спасибо что выбрали нас 🤗✌️\n\n"
                                   "🚀 Желаем Вам отличного настроения!")
 
@@ -78,9 +80,9 @@ class MainForm:
             if get_referral:
                 current_bye = round(Decimal(bye) - Decimal(percent) - Decimal(percent_referral), 8)
                 #f"{CONFIG.COMMISSION.COMMISSION_REFERRAL}% от {bye} составит = {percent_referral} BTC\n"
-                referral_txt = f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                referral_txt = f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"Вы получите BTC: {current_bye}\n" \
-                               f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                               f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"ПЕРЕЙТИ К ОПЛАТЕ?"
             else:
                 current_bye = round(Decimal(bye) - Decimal(percent), 8)
@@ -116,13 +118,14 @@ class MainForm:
     @staticmethod
     async def buying_BTC(user_money, message, state):
         price_BYN = await Cryptocurrency.get_byn()
-        price_RUB = await Cryptocurrency.get_rub()
+        #price_RUB = await Cryptocurrency.get_rub()
+        price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
 
         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
 
         bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
-        bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
-
+        #bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
+        bye_rub = round(price_RUB, 2)
         text = f"📈 Текущая цена Bitcoin: {round(price_BTC)}$\n" \
                f"📢 Внимание! Текущая цена покупки зафиксирована!\n" \
                f"Нажав кнопку ОПЛАТИТЬ✅ необходимо " \
@@ -134,7 +137,8 @@ class MainForm:
                f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                f"ПЕРЕЙТИ К ОПЛАТЕ?"
 
-        await state.update_data(exchange_RUB=float(Decimal(price_BTC) * Decimal(price_RUB)))
+        #await state.update_data(exchange_RUB=float(Decimal(price_BTC) * Decimal(price_RUB)))
+        await state.update_data(exchange_RUB=float(price_RUB))
         await state.update_data(exchange_BYN=float(Decimal(price_BTC) * Decimal(price_BYN)))
 
         await state.update_data(price_RUB=bye_rub)
@@ -407,7 +411,7 @@ class MainForm:
                                              callback_data=main_cb.new("Profile", "money_transfer", confirm, user_id)
                                              ),
                         InlineKeyboardButton(text="📥 Пополнить",
-                                             callback_data=money_cb.new("get_Profile", "money_reload", confirm, user_id)
+                                             callback_data=main_cb.new("Profile", "money_reload", confirm, user_id)
                                              )
                     ],
                     [
@@ -619,7 +623,7 @@ class MainForm:
                                                          reply_markup=await MainForm.continue_ikb())
 
                     elif data.get('action') == "get_continue":
-                        await callback.message.edit_text(text="Загрузите первую фотографию")
+                        await callback.message.edit_text(text="Загрузите фото последней страницы паспорта")
                         await MainState.VerificationPhotoOne.set()
 
                     elif data.get("action") == "get_transaction":
@@ -844,6 +848,20 @@ class MainForm:
                                                               f"{transfer}")
                         await state.finish()
 
+                    elif data.get('action') == 'money_reload':
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        wallet = await CRUDWallet.get(user_id=user.id)
+                        await callback.message.delete()
+                        await callback.message.answer(text='Что бы пополнить кошелек, переведите деньги '
+                                                           'на ваш адрес кошелька\n\n'
+                                                           f'<code>{wallet.address}</code>',
+                                                      parse_mode="HTML",
+                                                      reply_markup=await MainForm.back_ikb(
+                                                          user_id=callback.from_user.id,
+                                                          target="Profile",
+                                                          action="get_userWallet"
+                                                      ))
+
                 # Меню выбора количесво суммы для покупки BTC
                 elif data.get("target") == "BuyBTC":
                     price = await Cryptocurrency.get_Cryptocurrency(currency="USD")
@@ -879,8 +897,9 @@ class MainForm:
                         else:
                             #price = await Cryptocurrency.get_Cryptocurrency(currency="RUB")
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
-                            rub = await Cryptocurrency.get_rub()
-                            price = round(Decimal(rub) * Decimal(usd))
+                            #rub = await Cryptocurrency.get_rub()
+                            rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+                            price = round(Decimal(rub))
                             text = "Купить BTC за RUB\n" \
                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
                                    f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB}  RUB</i>"
@@ -1192,7 +1211,7 @@ class MainForm:
                                                     chunk_size=1215000)
 
                             await state.update_data(verification=f'{message.from_user.id}_user_verification_1')
-                            await message.answer(text="Загрузите вторую фотографию")
+                            await message.answer(text="Загрузите селфи с паспортом последней страницы")
                             await MainState.VerificationPhotoTwo.set()
                     else:
                         await message.answer(text="Загрузите картинку")
