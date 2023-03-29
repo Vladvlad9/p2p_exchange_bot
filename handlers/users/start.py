@@ -15,7 +15,7 @@ from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema
 from states.users.ReloadState import ReloadState
 from states.users.MainState import MainState
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", serialize=True)
+logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", serialize=True)
 
 
 @dp.message_handler(commands=["start"], state=MainState.all_states)

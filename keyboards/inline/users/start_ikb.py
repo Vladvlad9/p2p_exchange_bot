@@ -20,7 +20,7 @@ from schemas import TransactionSchema, WalletSchema, VerificationSchema
 from states.users.MainState import MainState
 
 from decimal import Decimal
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", serialize=True)
+logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", serialize=True)
 
 
 class MainForm:
