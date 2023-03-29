@@ -111,6 +111,7 @@ class MainForm:
             await state.update_data(sale=user_money)
             await state.update_data(exchange_rate=price_BTC)
             await state.update_data(buy_BTC=current_bye)
+            await state.update_data(percent=percent)
 
             await asyncio.sleep(int(CONFIG.PAYMENT_TIMER))
             await MainForm.send_timer_message(chat_id=message.from_user.id, state=state)
@@ -1190,6 +1191,7 @@ class MainForm:
                                     text = f"Заявка № {transaction.id}\n\n" \
                                            f"Имя: {message.from_user.first_name}\n" \
                                            f"Курс: {round(get_data['exchange_rate'])} {get_data['currency']}\n" \
+                                           f"Процент от суммы {get_data['percent']}\n" \
                                            f"Получено BTC: {get_data['buy_BTC']}\n" \
                                            f"Нужно отправить {get_data['currency']}: {get_data['sale']}\n" \
                                            f"Кошелёк: {get_data['wallet']}"
@@ -1197,6 +1199,7 @@ class MainForm:
                                     text = f"Заявка № {transaction.id}\n\n" \
                                            f"Имя {message.from_user.first_name}\n" \
                                            f"Курс: {round(get_data['exchange_rate'])}\n" \
+                                           f"Процент от суммы {get_data['percent']}\n" \
                                            f"Получено {get_data['currency']}: {get_data['sale']}\n" \
                                            f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
                                            f"Кошелёк: {get_data['wallet']}"
