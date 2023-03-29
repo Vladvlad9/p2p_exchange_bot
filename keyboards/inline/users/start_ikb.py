@@ -142,7 +142,7 @@ class MainForm:
 
         bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
         #bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
-        bye_rub = round(price_RUB, 2)
+        bye_rub = round(Decimal(price_RUB) * Decimal(user_money), 2)
         text = f"📈 Текущая цена Bitcoin: {round(price_BTC)}$\n" \
                f"📢 Внимание! Текущая цена покупки зафиксирована!\n" \
                f"Нажав кнопку ОПЛАТИТЬ✅ необходимо " \
