@@ -4,6 +4,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.exceptions import BadRequest
+from loguru import logger
 
 from config import CONFIG
 from config.config import CONFIGTEXT
@@ -19,6 +20,7 @@ from schemas import TransactionSchema, WalletSchema, VerificationSchema
 from states.users.MainState import MainState
 
 from decimal import Decimal
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", serialize=True)
 
 
 class MainForm:
@@ -592,6 +594,7 @@ class MainForm:
         )
 
     @staticmethod
+    @logger.catch
     async def process_profile(callback: CallbackQuery = None, message: Message = None,
                               state: FSMContext = None) -> None:
 

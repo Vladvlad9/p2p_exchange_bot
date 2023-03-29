@@ -1,5 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from loguru import logger
 
 from config.config import CONFIGTEXT
 from crud import CRUDUsers
@@ -14,6 +15,7 @@ from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema
 from states.users.ReloadState import ReloadState
 from states.users.MainState import MainState
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", serialize=True)
 
 
 @dp.message_handler(commands=["start"], state=MainState.all_states)
@@ -110,6 +112,7 @@ async def registration_start(message: types.Message):
 
 
 @dp.message_handler(commands=['test'])
+@logger.catch
 async def test(message: types.Message):
     #price_BTC = await Cryptocurrency.get_CryptocurrencyBTC("RUB")
     #await CreateWallet.money_text()
@@ -119,6 +122,7 @@ async def test(message: types.Message):
     # print('asd')
     # await CreateWallet.money_text()
     # print('asd')
+    #a = 1/0
     pass
 
 
