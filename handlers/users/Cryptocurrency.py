@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+import aiohttp
 import requests
 from config import CONFIG
 from fake_useragent import UserAgent
@@ -119,6 +120,10 @@ class Cryptocurrency:
 
     @staticmethod
     async def get_Cryptocurrency(currency: str) -> float:
+        ua = UserAgent()
+        headers = {
+            'User-Agent': ua.random
+        }
         url = ""
         if currency == 'USD':
             url = CONFIG.COINBASE.USD
@@ -127,17 +132,36 @@ class Cryptocurrency:
         else:
             url = CONFIG.COINBASE.RUB
 
-        get_request = requests.get(url=url)
-        try:
-            if get_request.status_code == 200:
-                data = get_request.json()
-                price = float(data["data"]["bitcoin"]["quote"]['price'])
-                round_price = round(price, 3)
-                return round_price
-            else:
-                print(get_request.status_code)
-        except Exception as e:
-            print(e)
+        post_price = 0
+        #get_request = requests.get(url=url, headers=headers)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                try:
+                    data = await response.json()
+                    price = float(data["data"]["bitcoin"]["quote"]['price'])
+                    round_price = round(price, 3)
+                    post_price = float(round_price)
+                    return post_price
+                except Exception:
+                    pass
+
+
+
+        # try:
+        #     if get_request.status_code == 200:
+        #         data = get_request.json()
+        #         price = float(data["data"]["bitcoin"]["quote"]['price'])
+        #         round_price = round(price, 3)
+        #         post_price = float(round_price)
+        #         return post_price
+        #
+        #     else:
+        #         print(get_request.status_code)
+        # except Exception as e:
+        #     if post_price != 0:
+        #         return post_price
+        #     await Cryptocurrency.get_Cryptocurrency("USD")
+
 
     @staticmethod
     async def Check_Wallet(btc_address: str) -> bool:

@@ -120,8 +120,24 @@ class MainForm:
         price_BYN = await Cryptocurrency.get_byn()
         #price_RUB = await Cryptocurrency.get_rub()
         price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+        if price_RUB is None:
+            count = 0
+            while price_RUB is None:
+                if count == 10:
+                    break
+                else:
+                    count += 1
+                    price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
 
         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
+        if price_BTC is None:
+            count = 0
+            while price_BTC is None:
+                if count == 10:  # Что бы не войти в бесконечный цикл
+                    break
+                else:
+                    count += 1
+                    price_BTC = await Cryptocurrency.get_Cryptocurrency("USD")
 
         bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
         #bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
@@ -890,6 +906,10 @@ class MainForm:
                             #price = await Cryptocurrency.get_Cryptocurrency(currency="BYN")
                             byn = await Cryptocurrency.get_byn()
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
+                            if usd is None:
+                                while usd is None:
+                                    usd = await Cryptocurrency.get_Cryptocurrency("USD")
+
                             price = round(Decimal(byn) * Decimal(usd))
                             text = "Купить BTC за BYN\n" \
                                    f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
@@ -899,6 +919,10 @@ class MainForm:
                             usd = await Cryptocurrency.get_Cryptocurrency("USD")
                             #rub = await Cryptocurrency.get_rub()
                             rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+                            if rub is None:
+                                while rub is None:
+                                    rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+
                             price = round(Decimal(rub))
                             text = "Купить BTC за RUB\n" \
                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
