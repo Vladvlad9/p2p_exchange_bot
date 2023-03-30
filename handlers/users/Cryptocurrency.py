@@ -125,7 +125,16 @@ class Cryptocurrency:
         else:
             #get_rub = await Cryptocurrency.get_rub()
             #rub = float(Decimal(get_rub) * Decimal(get_usd))
-            return await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+            rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+            if rub is None:
+                count_rub = 0
+                while get_usd is None:
+                    if count_rub == 10:  # Что бы не войти в бесконечный цикл
+                        break
+                    else:
+                        count_rub += 1
+                        rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+            return rub
 
     @staticmethod
     async def get_Cryptocurrency(currency: str) -> float:
@@ -170,7 +179,6 @@ class Cryptocurrency:
         #     if post_price != 0:
         #         return post_price
         #     await Cryptocurrency.get_Cryptocurrency("USD")
-
 
     @staticmethod
     async def Check_Wallet(btc_address: str) -> bool:

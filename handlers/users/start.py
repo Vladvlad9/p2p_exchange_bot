@@ -14,6 +14,7 @@ from keyboards.inline.users.money_reload import Money_reload
 from keyboards.inline.users.start_ikb import MainForm, main_cb
 from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema
+from states.users.BtcState import BTCState
 from states.users.BynState import BynState
 from states.users.ReloadState import ReloadState
 from states.users.MainState import MainState
@@ -25,6 +26,7 @@ logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", serial
 @dp.message_handler(commands=["start"], state=MainState.all_states)
 @dp.message_handler(commands=["start"], state=BynState.all_states)
 @dp.message_handler(commands=["start"], state=RubState.all_states)
+@dp.message_handler(commands=["start"], state=BTCState.all_states)
 @dp.message_handler(commands=["start"], state=ReloadState.all_states)
 async def registration_start_state(message: types.Message, state: FSMContext):
     await state.finish()
