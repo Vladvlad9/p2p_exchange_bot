@@ -23,11 +23,11 @@ from states.users.RubState import RubState
 logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", serialize=True)
 
 
-@dp.message_handler(commands=["start"], state=MainState.all_states)
 @dp.message_handler(commands=["start"], state=BynState.all_states)
 @dp.message_handler(commands=["start"], state=RubState.all_states)
 @dp.message_handler(commands=["start"], state=BTCState.all_states)
 @dp.message_handler(commands=["start"], state=ReloadState.all_states)
+@dp.message_handler(commands=["start"], state=MainState.all_states)
 async def registration_start_state(message: types.Message, state: FSMContext):
     await state.finish()
     user = await CRUDUsers.get(user_id=message.from_user.id)
