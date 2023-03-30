@@ -108,12 +108,12 @@ class BtcForm:
 
         price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
         if price_BTC is None:
-            count = 0
+            counts = 0
             while price_BTC is None:
-                if count == 10:  # Что бы не войти в бесконечный цикл
+                if counts == 10:  # Что бы не войти в бесконечный цикл
                     break
                 else:
-                    count += 1
+                    counts += 1
                     price_BTC = await Cryptocurrency.get_Cryptocurrency("USD")
 
         bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
