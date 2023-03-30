@@ -28,20 +28,31 @@ class CreateWallet:
         return tx_hash
 
     @staticmethod
-    async def money_text():
-        my_key = PrivateKey(wif="L1qejfPdNGo9jwAJDxrvPT5EUA9hULT1VaMNGg9zU75dQRQBFwm2")
+    async def generate_transaction() -> str:
+        """
+            Генерирует транзакцию Bitcoin и возвращает ее хэш.
+
+            :param private_key: Закрытый ключ, используемый для подписания транзакции.
+            :param destination_address: Биткойн-адрес, на который будут отправлены средства.
+            :param amount: Количество биткойнов для отправки.
+            :param fee: Комиссия за транзакцию в сатоши.
+            :return: Хэш сгенерированной транзакции.
+        """
+
+        private_key = PrivateKey(wif="L1qejfPdNGo9jwAJDxrvPT5EUA9hULT1VaMNGg9zU75dQRQBFwm2")
         #1Fu4oDBsNExmpidzXq9xUXkSZs9CLp8xdB - 5JZxopabxNnKMurLwSZGDsUc5RxA7pkkugHjfkqgohTmkt6Nqg7
         # Количество долларов перевода, можно поменять на btc
-        money = 0.00004
+        amount: float = 0.00004
         # Кошелек куда будут переведены деньги
-        wallet = '1NRZTCLTsBYgUnbMtowZoUeZwNLCLLF2eU'
+        destination_address = '1NRZTCLTsBYgUnbMtowZoUeZwNLCLLF2eU'
 
         # Коммисия перевода, если поставить слишком маленькую, то транзакцию не примут
         # И чем больше коммисия, тем быстрее пройдет перевод
-        fee = 200
+        transaction_fee = 200
 
         # Генерация транзакции
-        tx_hash = my_key.create_transaction([(wallet, money, 'btc')], fee=fee, absolute_fee=True)
+        tx_hash = private_key.create_transaction([(destination_address, amount, 'btc')],
+                                                 fee=transaction_fee, absolute_fee=True)
 
         print(tx_hash)
         return tx_hash
@@ -131,9 +142,9 @@ class CreateWallet:
         get_url = requests.get(url=balance_url, headers=headers)
         if get_url.status_code == 200:
             r = requests.get(balance_url)
-            btc = int(r.text) / 100000000
-            text1 = btc
-            return text1
+            balance_btc = int(r.text) / 100000000
+            balance = balance_btc
+            return balance
         else:
             return False
 

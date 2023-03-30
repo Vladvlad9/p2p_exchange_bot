@@ -109,9 +109,18 @@ class Cryptocurrency:
     @staticmethod
     async def get_update_currency(currency: str) -> float:
         get_usd = await Cryptocurrency.get_Cryptocurrency("USD")
+        if get_usd is None:
+            count = 0
+            while get_usd is None:
+                if count == 10:  # Что бы не войти в бесконечный цикл
+                    break
+                else:
+                    count += 1
+                    get_usd = await Cryptocurrency.get_Cryptocurrency("USD")
+
         if currency == 'BYN':
             get_byn = await Cryptocurrency.get_byn()
-            byn = float(Decimal(get_byn) * Decimal(get_usd))
+            byn: float = float(Decimal(get_byn) * Decimal(get_usd))
             return byn
         else:
             #get_rub = await Cryptocurrency.get_rub()
