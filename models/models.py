@@ -33,6 +33,17 @@ class Transaction(Base):
     operation_id = Column(Integer, default=0)
 
 
+class TransactionsReferrals(Base):
+    __tablename__ = 'transactions_referrals'
+
+    id = Column(Integer, primary_key=True)
+    transaction_id = Column(Integer)
+    user_id = Column(BigInteger)
+    referral_id = Column(BigInteger)
+    percent = Column(Float)
+    date_transaction = Column(TIMESTAMP, default=datetime.now())
+
+
 class Referral(Base):
     __tablename__ = 'referrals'
 

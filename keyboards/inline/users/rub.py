@@ -9,11 +9,12 @@ from loguru import logger
 
 from config.config import CONFIGTEXT, CONFIG
 from crud import CRUDCurrency, CRUDReferral, CRUDUsers, CRUDTransaction
+from crud.transactions_referralsCRUD import CRUDTransactionReferrals
 from crud.walCRUD import CRUDWallet
 from handlers.users.AllCallbacks import main_cb, byn_cb, rub_cb, btc_cb
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
-from schemas import TransactionSchema, UserInDBSchema
+from schemas import TransactionSchema, UserInDBSchema, TransactionsReferralSchema
 from states.users.RubState import RubState
 
 
@@ -102,8 +103,9 @@ class Rub:
             get_referral = await CRUDReferral.get(referral_id=message.from_user.id)
 
             if get_referral:
+                await state.update_data(percent_referral=percent_referral)
+                await state.update_data(referral_id=get_referral.user_id)  # Сколько получается процентов от суммы
                 current_bye = round(Decimal(bye) - Decimal(percent) - Decimal(percent_referral), 8)
-                # f"{CONFIG.COMMISSION.COMMISSION_REFERRAL}% от {bye} составит = {percent_referral} BTC\n"
                 referral_txt = f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
                                f"Вы получите BTC: {current_bye}\n" \
                                f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
@@ -347,6 +349,19 @@ class Rub:
                                                                                                   operation_id=1,
                                                                                                   **get_data)
                                                                     )
+                            #  Если обмен совершил реферал то ему придет уведомление
+                            #  Нужно сделать перевод на кошелек
+                            if "percent_referral" in get_data:
+                                referral_id = await CRUDUsers.get(id=int(get_data['referral_id']))
+                                await CRUDTransactionReferrals.add(transaction_referral=TransactionsReferralSchema(
+                                    transaction_id=transaction.id,
+                                    user_id=message.from_user.id,
+                                    referral_id=referral_id.user_id,
+                                    percent=float(get_data['percent_referral'])
+                                ))
+                                await bot.send_message(chat_id=referral_id.user_id,
+                                                       text=f"Ваш реферал {message.from_user.id} совершил обмен\n"
+                                                            f"Вам начислен процент - {get_data['percent_referral']}")
 
                             try:
                                 await bot.download_file(file_path=get_photo.file_path,
@@ -375,7 +390,7 @@ class Rub:
 
                                 await Rub.confirmation_timer(message=message)
 
-                                user.buy_timer = True
+                                user.transaction_timer = True
                                 await CRUDUsers.update(user=user)
 
                             except Exception as e:

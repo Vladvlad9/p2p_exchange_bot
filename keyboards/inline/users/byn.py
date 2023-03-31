@@ -379,7 +379,7 @@ class Byn:
 
                                 await Byn.confirmation_timer(message=message)
 
-                                user.buy_timer = True
+                                user.transaction_timer = True
                                 await CRUDUsers.update(user=user)
 
                             except Exception as e:

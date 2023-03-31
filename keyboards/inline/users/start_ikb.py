@@ -10,6 +10,7 @@ from config import CONFIG
 from config.config import CONFIGTEXT
 from crud import CRUDUsers, CRUDTransaction, CRUDCurrency
 from crud.referralCRUD import CRUDReferral
+from crud.transactions_referralsCRUD import CRUDTransactionReferrals
 from crud.verificationCRUD import CRUDVerification
 from crud.walCRUD import CRUDWallet
 from handlers.users.AllCallbacks import money_cb, main_cb, btc_cb
@@ -293,6 +294,64 @@ class MainForm:
             )
 
     @staticmethod
+    async def pagination_referrals_ikb(target: str,
+                                       user_id: int,
+                                       action: str = None,
+                                       page: int = 0) -> InlineKeyboardMarkup:
+        """
+        Клавиатура пагинации проведенных операций пользователя
+        :param target:  Параметр что бы указать куда переходить назад
+        :param user_id: id пользователя
+        :param action: Не обязательный параметр, он необходим если в callback_data есть подзапрос для вкладки
+        :param page: текущая страница пагинации
+        :return:
+        """
+        orders = await CRUDTransactionReferrals.get_all(referral_id=user_id)
+
+        orders_count = len(orders)
+
+        prev_page: int
+        next_page: int
+
+        if page == 0:
+            prev_page = orders_count - 1
+            next_page = page + 1
+        elif page == orders_count - 1:
+            prev_page = page - 1
+            next_page = 0
+        else:
+            prev_page = page - 1
+            next_page = page + 1
+
+        back_ikb = InlineKeyboardButton("◀️ Назад", callback_data=main_cb.new("Profile", "get_Profile", 0, 0))
+        prev_page_ikb = InlineKeyboardButton("←", callback_data=main_cb.new(target, action, prev_page, 0))
+        page = InlineKeyboardButton(f"{str(page + 1)}/{str(orders_count)}",
+                                    callback_data=main_cb.new("", "", 0, 0))
+        next_page_ikb = InlineKeyboardButton("→", callback_data=main_cb.new(target, action, next_page, 0))
+
+        if orders_count == 1:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+        else:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        prev_page_ikb,
+                        page,
+                        next_page_ikb,
+                    ],
+                    [
+                        back_ikb
+                    ]
+                ]
+            )
+
+    @staticmethod
     async def money_transfer_ikb(user_id: int) -> InlineKeyboardMarkup:
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -477,14 +536,35 @@ class MainForm:
                     elif data.get("action") == "get_referrals":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         referrals = await CRUDReferral.get_all(user_id=user.id)
-
-                        text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}"
+                        orders = await CRUDTransactionReferrals.get_all(referral_id=user.user_id)
+                        text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}\n\n" \
+                               f"Реферал - {orders[0].user_id}\n" \
+                               f"Процент - {orders[0].percent}\n" \
+                               f"Дата операции - {orders[0].date_transaction}"
                         await callback.message.edit_text(text=text,
-                                                         reply_markup=await MainForm.back_ikb(
+                                                         reply_markup=await MainForm.pagination_referrals_ikb(
                                                              user_id=callback.from_user.id,
                                                              target="Profile",
                                                              page=0,
-                                                             action="get_Profile")
+                                                             action="get_referrals_pagination")
+                                                         )
+
+                    elif data.get("action") == "get_referrals_pagination":
+                        page = int(data.get('id'))
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        referrals = await CRUDReferral.get_all(user_id=user.id)
+                        orders = await CRUDTransactionReferrals.get_all(referral_id=user.user_id)
+                        text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}\n\n" \
+                               f"Реферал - {orders[page].user_id}\n" \
+                               f"Процент - {orders[page].percent}\n" \
+                               f"Дата операции - {orders[page].date_transaction}"
+
+                        await callback.message.edit_text(text=text,
+                                                         reply_markup=await MainForm.pagination_referrals_ikb(
+                                                             user_id=callback.from_user.id,
+                                                             target="Profile",
+                                                             page=page,
+                                                             action="get_referrals_pagination")
                                                          )
 
                     elif data.get("action") == "get_userWallet":
