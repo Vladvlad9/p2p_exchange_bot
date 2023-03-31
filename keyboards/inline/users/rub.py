@@ -324,7 +324,7 @@ class Rub:
                     if money:
                         await Rub.buying_currency(money=message.text,
                                                   currency="RUB",
-                                                  limit=CONFIG.COMMISSION.MIN_BYN,
+                                                  limit=CONFIG.COMMISSION.MIN_RUB,
                                                   message=message,
                                                   state=state)
 
