@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.exceptions import BadRequest
+from aiogram.utils.exceptions import BadRequest, ChatNotFound
 from loguru import logger
 
 from config.config import CONFIGTEXT, CONFIG
@@ -336,6 +336,7 @@ class BtcForm:
                                 get_transaction = await CRUDTransaction.get(transaction=transaction.id)
                                 get_transaction.check = f'{transaction.id}_{message.from_user.id}'
                                 await CRUDTransaction.update(transaction=get_transaction)
+
                                 text = f"Заявка № {transaction.id}\n\n" \
                                        f"Имя: {message.from_user.first_name}\n" \
                                        f"Курс: {round(get_data['exchange_rate'])} {get_data['currency']}\n" \
@@ -343,10 +344,12 @@ class BtcForm:
                                        f"Нужно отправить {get_data['currency']}: {get_data['sale']}\n" \
                                        f"Кошелёк: {get_data['wallet']}"
 
+                                tasks = []
                                 for admin in CONFIG.BOT.ADMINS:
-                                    await bot.send_photo(chat_id=admin, photo=photo,
-                                                         caption=f"Пользователь оплатил!\n\n"
-                                                                 f"{text}")
+                                    tasks.append(bot.send_photo(chat_id=admin, photo=photo,
+                                                                caption=f"Пользователь оплатил!\n\n"
+                                                                        f"{text}"))
+                                await asyncio.gather(*tasks, return_exceptions=True) # Отправка всем админам сразу
 
                                 await BtcForm.confirmation_timer(message=message)
 

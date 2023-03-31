@@ -366,10 +366,12 @@ class Rub:
                                        f"Нужно отправить  BTC: {get_data['buy_BTC']}\n" \
                                        f"Кошелёк: {get_data['wallet']}"
 
+                                tasks = []
                                 for admin in CONFIG.BOT.ADMINS:
-                                    await bot.send_photo(chat_id=admin, photo=photo,
-                                                         caption=f"Пользователь оплатил!\n\n"
-                                                                 f"{text}")
+                                    tasks.append(bot.send_photo(chat_id=admin, photo=photo,
+                                                                caption=f"Пользователь оплатил!\n\n"
+                                                                        f"{text}"))
+                                await asyncio.gather(*tasks, return_exceptions=True)  # Отправка всем админам сразу
 
                                 await Rub.confirmation_timer(message=message)
 
