@@ -68,7 +68,7 @@ class Byn:
                                       f"Введите сумму в {currency}")
             await BynState.UserCoin.set()
         else:
-            price_BTC: float = await Cryptocurrency.get_update_currency(currency)
+            price_BTC: float = await Cryptocurrency.get_btc()
             bye: float = round(int(user_money) / price_BTC, 8)
 
             currency = await CRUDCurrency.get(currency_name=currency)
@@ -217,15 +217,12 @@ class Byn:
                 elif data.get("target") == "Pay":
                     if data.get("action") == "EnterAmount":
                         byn: float = await Cryptocurrency.get_byn()
-                        usd: float = await Cryptocurrency.get_Cryptocurrency("USD")
-                        if usd is None:
-                            while usd is None:
-                                usd = await Cryptocurrency.get_Cryptocurrency("USD")
+                        btc: float = await Cryptocurrency.get_btc()
 
-                        price: int = round(Decimal(byn) * Decimal(usd))
-                        text = "Купить BTC за BYN\n" \
-                               f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
-                               f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_BYN} BYN</i>"
+                        price = round(Decimal(byn) * Decimal(btc))
+                        text: str = "Купить BTC за BYN\n" \
+                                    f"1 Bitcoin ₿ = {price} BYN 🇧🇾\n\n" \
+                                    f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_BYN} BYN</i>"
 
                         await callback.message.edit_text(text=f"{text}\n\n"
                                                               f"Введите сумму в BYN 🇧🇾:",

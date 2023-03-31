@@ -96,28 +96,12 @@ class BtcForm:
     @staticmethod
     async def buying_BTC(user_money, message, state):
         price_BYN = await Cryptocurrency.get_byn()
-        price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
-        if price_RUB is None:
-            count = 0
-            while price_RUB is None:
-                if count == 10:
-                    break
-                else:
-                    count += 1
-                    price_RUB = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+        price_RUB = await Cryptocurrency.get_rub()
 
-        price_BTC = await Cryptocurrency.get_Cryptocurrency(currency="USD")
-        if price_BTC is None:
-            counts = 0
-            while price_BTC is None:
-                if counts == 10:  # Что бы не войти в бесконечный цикл
-                    break
-                else:
-                    counts += 1
-                    price_BTC = await Cryptocurrency.get_Cryptocurrency("USD")
+        price_BTC = await Cryptocurrency.get_btc()
 
         bye_byn = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_BYN), 2)
-        bye_rub = round(Decimal(price_RUB) * Decimal(user_money), 2)
+        bye_rub = round(Decimal(user_money) * Decimal(price_BTC) * Decimal(price_RUB), 2)
 
         text = f"📈 Текущая цена Bitcoin: {round(price_BTC)}$\n" \
                f"📢 Внимание! Текущая цена покупки зафиксирована!\n" \

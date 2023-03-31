@@ -84,7 +84,7 @@ class Rub:
                                       f"Введите сумму в {currency}")
             await RubState.UserCoin.set()
         else:
-            price_BTC: float = await Cryptocurrency.get_update_currency(currency)
+            price_BTC: float = await Cryptocurrency.get_btc()
             bye: float = round(int(user_money) / price_BTC, 8)
 
             currency = await CRUDCurrency.get(currency_name=currency)
@@ -214,15 +214,13 @@ class Rub:
 
                 elif data.get("target") == "Pay":
                     if data.get("action") == "EnterAmount":
-                        rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
-                        if rub is None:
-                            while rub is None:
-                                rub = await Cryptocurrency.get_CryptocurrencyBTC(currency="RUB")
+                        rub = await Cryptocurrency.get_rub()
+                        btc: float = await Cryptocurrency.get_btc()
 
-                        price = round(Decimal(rub))
-                        text = "Купить BTC за RUB 🇷🇺\n" \
-                               f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
-                               f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB}  RUB</i>"
+                        price = round(Decimal(rub) * Decimal(btc))
+                        text: str = "Купить BTC за RUB 🇷🇺\n" \
+                                    f"1 Bitcoin ₿ = {price} RUB 🇷🇺\n\n" \
+                                    f"<i>Мин. сумма {CONFIG.COMMISSION.MIN_RUB}  RUB</i>"
 
                         await callback.message.edit_text(text=f"{text}\n\n"
                                                               f"Введите сумму в RUB 🇷🇺:",
