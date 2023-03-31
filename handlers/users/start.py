@@ -8,9 +8,6 @@ from crud.referralCRUD import CRUDReferral
 from crud.walCRUD import CRUDWallet
 from handlers.users.AllCallbacks import money_cb
 from handlers.users.CreateWallet import CreateWallet
-from handlers.users.Cryptocurrency import Cryptocurrency
-from keyboards import byn_cb
-from keyboards.inline.users.money_reload import Money_reload
 from keyboards.inline.users.start_ikb import MainForm, main_cb
 from loader import dp, bot
 from schemas import UserSchema, ReferralSchema, WalletSchema

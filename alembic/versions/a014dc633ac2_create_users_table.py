@@ -22,6 +22,7 @@ def upgrade() -> None:
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
                     sa.Column('date_created', sa.DateTime(), nullable=True),
                     sa.Column('verification_id', sa.BigInteger(), default=0),
+                    sa.Column('transaction_timer', sa.Boolean(), default=False),
                     sa.PrimaryKeyConstraint('id')
                     )
 

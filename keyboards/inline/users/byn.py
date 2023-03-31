@@ -45,10 +45,17 @@ class Byn:
     @staticmethod
     async def send_timer_message(chat_id: int, state):
         await state.finish()
-        await bot.send_message(chat_id=chat_id,
-                               text='Время вышло!\n'
-                                    f'{CONFIGTEXT.MAIN_FORM.TEXT}',
-                               reply_markup=await Byn.start_MainForm_ikb(chat_id))
+        user = await CRUDUsers.get(user_id=chat_id)
+        if user.buy_timer:
+            await asyncio.sleep(0)
+            user.buy_timer = False
+            await CRUDUsers.update(user=user)
+            return
+        else:
+            await bot.send_message(chat_id=chat_id,
+                                   text='Время вышло!\n'
+                                        f'{CONFIGTEXT.MAIN_FORM.TEXT}',
+                                   reply_markup=await Byn.start_MainForm_ikb(chat_id))
 
     @staticmethod
     async def buying_currency(money: int, currency: str, limit: int, message: types.Message, state):
@@ -369,6 +376,9 @@ class Byn:
                                                                  f"{text}")
 
                                 await Byn.confirmation_timer(message=message)
+
+                                user.buy_timer = True
+                                await CRUDUsers.update(user=user)
 
                             except Exception as e:
                                 print(e)

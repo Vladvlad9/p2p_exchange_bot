@@ -13,7 +13,7 @@ from crud.walCRUD import CRUDWallet
 from handlers.users.AllCallbacks import main_cb, byn_cb, rub_cb, btc_cb
 from handlers.users.Cryptocurrency import Cryptocurrency
 from loader import bot
-from schemas import TransactionSchema
+from schemas import TransactionSchema, UserInDBSchema
 from states.users.RubState import RubState
 
 
@@ -61,10 +61,17 @@ class Rub:
     @staticmethod
     async def send_timer_message(chat_id: int, state):
         await state.finish()
-        await bot.send_message(chat_id=chat_id,
-                               text='Время вышло!\n'
-                                    f'{CONFIGTEXT.MAIN_FORM.TEXT}',
-                               reply_markup=await Rub.start_MainForm_ikb(chat_id))
+        user = await CRUDUsers.get(user_id=chat_id)
+        if user.buy_timer:
+            await asyncio.sleep(0)
+            user.buy_timer = False
+            await CRUDUsers.update(user=user)
+            return
+        else:
+            await bot.send_message(chat_id=chat_id,
+                                   text='Время вышло!\n'
+                                        f'{CONFIGTEXT.MAIN_FORM.TEXT}',
+                                   reply_markup=await Rub.start_MainForm_ikb(chat_id))
 
     @staticmethod
     async def buying_currency(money: int, currency: str, limit: int, message: types.Message, state):
@@ -365,6 +372,9 @@ class Rub:
                                                                  f"{text}")
 
                                 await Rub.confirmation_timer(message=message)
+
+                                user.buy_timer = True
+                                await CRUDUsers.update(user=user)
 
                             except Exception as e:
                                 print(e)

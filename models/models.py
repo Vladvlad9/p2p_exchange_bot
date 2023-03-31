@@ -14,6 +14,7 @@ class User(Base):
     user_id = Column(BigInteger, nullable=False)
     date_created = Column(TIMESTAMP, default=datetime.now())  # Дата создания акк.
     verification_id = Column(BigInteger, default=0)
+    transaction_timer = Column(Boolean, default=False)  # поле для того что бы запустить/остановить таймер обмена валюты
 
 
 class Transaction(Base):
