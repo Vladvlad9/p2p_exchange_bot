@@ -537,17 +537,27 @@ class MainForm:
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         referrals = await CRUDReferral.get_all(user_id=user.id)
                         orders = await CRUDTransactionReferrals.get_all(referral_id=user.user_id)
-                        text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}\n\n" \
-                               f"Реферал - {orders[0].user_id}\n" \
-                               f"Процент - {orders[0].percent}\n" \
-                               f"Дата операции - {orders[0].date_transaction}"
-                        await callback.message.edit_text(text=text,
-                                                         reply_markup=await MainForm.pagination_referrals_ikb(
-                                                             user_id=callback.from_user.id,
-                                                             target="Profile",
-                                                             page=0,
-                                                             action="get_referrals_pagination")
-                                                         )
+                        if orders:
+                            text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}\n\n" \
+                                   f"Реферал - {orders[0].user_id}\n" \
+                                   f"Процент - {orders[0].percent}\n" \
+                                   f"Дата операции - {orders[0].date_transaction}"
+                            await callback.message.edit_text(text=text,
+                                                             reply_markup=await MainForm.pagination_referrals_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 target="Profile",
+                                                                 page=0,
+                                                                 action="get_referrals_pagination")
+                                                             )
+                        else:
+                            text = f"Количество зарегистрированных рефералов по вашей ссылке : {len(referrals)}"
+                            await callback.message.edit_text(text=text,
+                                                             reply_markup=await MainForm.back_ikb(
+                                                                 user_id=callback.from_user.id,
+                                                                 target="Profile",
+                                                                 page=0,
+                                                                 action="get_Profile")
+                                                             )
 
                     elif data.get("action") == "get_referrals_pagination":
                         page = int(data.get('id'))
