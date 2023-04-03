@@ -63,9 +63,9 @@ class Rub:
     async def send_timer_message(chat_id: int, state):
         await state.finish()
         user = await CRUDUsers.get(user_id=chat_id)
-        if user.buy_timer:
+        if user.transaction_timer:
             await asyncio.sleep(0)
-            user.buy_timer = False
+            user.transaction_timer = False
             await CRUDUsers.update(user=user)
             return
         else:
